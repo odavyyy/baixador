@@ -285,16 +285,42 @@ export class Updater {
       fs.rmSync(staging, { recursive: true, force: true });
       throw e;
     }
-    fs.mkdirSync(this.root, { recursive: true });
-    const script = path.join(this.root, 'trocar-versao.ps1');
-    fs.writeFileSync(script, '\uFEFF' + SWAP_SCRIPT, 'utf8');
-    const ps = path.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe');
     logger.info('update', `Troca de pastas agendada: ${staging} -> ${dir} (cópia anterior em ${backup})`);
-    const child = spawn(ps, ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden', '-File', script,
-      '-AppPid', String(process.pid), '-AppDir', dir, '-NewDir', staging, '-Backup', backup, '-Exe', this.o.exeName,
-      '-Result', path.join(this.o.dataDir, 'update-result.json'), '-Version', version], { detached: true, stdio: 'ignore', cwd: this.root });
-    child.unref();
+    try {
+      await startHelper(this.root, {
+        AppPid: process.pid, AppDir: dir, NewDir: staging, Backup: backup, Exe: this.o.exeName,
+        Result: path.join(this.o.dataDir, 'update-result.json'), Version: version,
+      });
+    } catch (e) {
+      fs.rmSync(staging, { recursive: true, force: true });
+      throw e;
+    }
   }
+}
+
+/**
+ * Starts the swap script so that it survives the app closing, and waits until it says it is running; the app
+ * only quits after that. A directly detached powershell.exe has no console and exits without running
+ * anything, so "cmd /c start" gives it one. Paths travel in a JSON file, never on the command line.
+ */
+export async function startHelper(root: string, params: Record<string, string | number>, waitMs = 20_000): Promise<void> {
+  fs.mkdirSync(root, { recursive: true });
+  const ready = path.join(root, 'trocar-versao.pronto');
+  fs.rmSync(ready, { force: true });
+  fs.writeFileSync(path.join(root, 'trocar-versao.ps1'), '\uFEFF' + SWAP_SCRIPT, 'utf8');
+  fs.writeFileSync(path.join(root, 'trocar-versao.json'), JSON.stringify(params), 'utf8');
+  const system = path.join(process.env.SystemRoot || 'C:\\Windows', 'System32');
+  const ps = path.join(system, 'WindowsPowerShell', 'v1.0', 'powershell.exe');
+  const child = spawn(path.join(system, 'cmd.exe'), ['/d', '/c', 'start', '""', '/min', ps, '-NoProfile', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden', '-File', 'trocar-versao.ps1'],
+    { detached: true, stdio: 'ignore', cwd: root, windowsVerbatimArguments: true });
+  child.on('error', (e) => logger.error('update', `Não foi possível abrir o auxiliar: ${e.message}`));
+  child.unref();
+  const end = Date.now() + waitMs;
+  while (Date.now() < end) {
+    if (fs.existsSync(ready)) return;
+    await new Promise((r) => setTimeout(r, 200));
+  }
+  throw new UserError('O assistente de atualização não iniciou (o PowerShell pode estar bloqueado neste computador). Nada foi alterado.');
 }
 
 export function canWrite(dir: string): boolean {
@@ -309,8 +335,18 @@ export function canWrite(dir: string): boolean {
 }
 
 /** Waits for the app to exit, swaps the folders and starts the new version; on failure restores the old one. */
-export const SWAP_SCRIPT = String.raw`param([int]$AppPid, [string]$AppDir, [string]$NewDir, [string]$Backup, [string]$Exe, [string]$Result, [string]$Version)
-$ErrorActionPreference = 'Stop'
+export const SWAP_SCRIPT = String.raw`$ErrorActionPreference = 'Stop'
+$p = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'trocar-versao.json') -Raw -Encoding UTF8 | ConvertFrom-Json
+$AppPid = [int]$p.AppPid; $AppDir = $p.AppDir; $NewDir = $p.NewDir; $Backup = $p.Backup; $Exe = $p.Exe; $Result = $p.Result; $Version = $p.Version
+'ok' | Set-Content -LiteralPath (Join-Path $PSScriptRoot 'trocar-versao.pronto')
+# not Start-Process: it reads [ ] in a path as a wildcard
+function Open-App {
+  $si = New-Object System.Diagnostics.ProcessStartInfo
+  $si.FileName = Join-Path $AppDir $Exe
+  $si.WorkingDirectory = $AppDir
+  $si.UseShellExecute = $false
+  [void][System.Diagnostics.Process]::Start($si)
+}
 function Save($ok, $message) {
   try { @{ ok = $ok; message = $message } | ConvertTo-Json | Set-Content -LiteralPath $Result -Encoding UTF8 } catch {}
 }
@@ -323,18 +359,18 @@ for ($i = 0; $i -lt 40 -and -not $moved; $i++) {
 if (-not $moved) {
   Save $false 'A pasta do aplicativo está em uso (outra janela ou programa aberto nela). Nada foi alterado.'
   Remove-Item -LiteralPath $NewDir -Recurse -Force -ErrorAction SilentlyContinue
-  Start-Process -FilePath (Join-Path $AppDir $Exe) -WorkingDirectory $AppDir
+  Open-App
   exit 1
 }
 try {
   Rename-Item -LiteralPath $NewDir -NewName (Split-Path -Leaf $AppDir)
   Save $true ("Atualizado para a versão " + $Version + ". A versão anterior foi guardada em: " + $Backup)
-  Start-Process -FilePath (Join-Path $AppDir $Exe) -WorkingDirectory $AppDir
+  Open-App
 } catch {
   if (Test-Path -LiteralPath $AppDir) { Rename-Item -LiteralPath $AppDir -NewName (Split-Path -Leaf $NewDir) -ErrorAction SilentlyContinue }
   Rename-Item -LiteralPath $Backup -NewName (Split-Path -Leaf $AppDir)
   Save $false ('A atualização falhou e a versão anterior foi restaurada. ' + $_.Exception.Message)
-  Start-Process -FilePath (Join-Path $AppDir $Exe) -WorkingDirectory $AppDir
+  Open-App
   exit 1
 }
 `;

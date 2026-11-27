@@ -299,22 +299,30 @@ arquivos JSON em `%APPDATA%\Baixador`. As capas ficam na pasta `thumbs`, e os lo
 
 ## Testes e situação atual
 
-Versão 1.2.0. Testado no Windows 11 Pro x64, com o yt-dlp 2026.10.26 e uma versão do FFmpeg de novembro de 2026:
+Versão 1.2.0, testada no Windows 11 Pro x64, com yt-dlp 2026.10.26, FFmpeg de novembro de 2026 e uma RTX 5060 Ti.
 
-- Análise de links e lista de formatos no YouTube.
-- Um álbum do YouTube Music com 14 faixas, baixado inteiro em MP3 (VBR máxima), com dois downloads por vez,
-  inclusive títulos com acento. Em uma das faixas houve erro 403, e a nova tentativa via HLS funcionou.
-- MP4 (240p, 720p60 e 1080p60), MKV (240p AV1 e 1440p60), MP3 (128, 192 e 320 kbps com capa) e M4A original.
-- Dois downloads simultâneos com um na fila; pausar e continuar, cancelar com limpeza e tentar de novo.
-- Mensagem de erro clara para um link que não é de vídeo, e remoção de um item do histórico sem apagar o arquivo.
-- Detecção automática do yt-dlp e do FFmpeg (na abertura e pelo botão **Detectar**) e o aviso de ferramenta ausente.
-- A versão portátil (extraída e executada) e o app descompactado; `npm ci` do zero, seguido de
-  `npm run dev`, `npm run build` e `npm run dist`.
+**Conversor** (54 de 54 testes com o FFmpeg real, saídas conferidas com o ffprobe): os presets, CPU e NVENC
+(H.264, H.265 e AV1), limites de tamanho, vídeo curto, longo, 4K, sem áudio, vertical, HDR, nomes com
+caracteres especiais, arquivos inválidos e corrompidos, cancelamento, falha real da GPU com nova tentativa na
+CPU, e o original sempre intacto. No app empacotado: seletor, arrastar e soltar, conversão, cancelamento,
+limite impossível e modo personalizado. A **nova tentativa por tamanho acima do limite** não chegou a ser
+acionada: todos os resultados ficaram dentro do alvo na primeira vez.
 
-Ainda não testado: outros sites (Instagram, TikTok etc.), Windows 10, o instalador e o desinstalador,
-a opção de cookies do navegador, a detecção de links copiados, as
-notificações do Windows, o botão **Atualizar yt-dlp**, apagar um arquivo para a Lixeira pelo Histórico,
-padrões de nome diferentes de "Título", abrir a pasta ao concluir e a exportação do log.
+**Atualizador**:
+- Versão portátil, real do início ao fim: um build 0.9.0 baixou a v1.0.0 do GitHub, conferiu o SHA-256,
+  trocou a pasta e reabriu, mantendo os dados.
+- Versão instalada: o instalador NSIS real atualizou um app de teste da 1.2.0 para a 1.2.1 e o reabriu; a
+  origem foi um servidor local, porque não havia versão mais nova publicada.
+- Falhas (rascunho, pré-lançamento, queda de conexão, arquivo incompleto, hash errado, arquivo inválido,
+  redirecionamento indevido e outras): simuladas com um servidor local.
+- Também reais: consulta e download das releases do GitHub e a troca de pasta com a pasta em uso.
+
+**Downloads** (testados nas versões anteriores): YouTube em MP4, MKV, MP3 e áudio original; playlist com 14
+faixas; fila, pausar, continuar, cancelar e tentar de novo.
+
+**Ainda não testado:** outros sites, Windows 10, computador sem GPU NVIDIA (a falta da GPU foi forçada),
+atualização de uma instalação em pasta que exige administrador, cookies do navegador, detecção de links
+copiados, notificações do Windows, o botão **Atualizar yt-dlp** e o workflow do GitHub Actions.
 
 ## Como foi feito
 

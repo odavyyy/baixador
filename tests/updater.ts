@@ -7,7 +7,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { createHash, randomBytes } from 'node:crypto';
-import { Updater, localTestFeed } from '../src/main/updater';
+import { spawn } from 'node:child_process';
+import { Updater, localTestFeed, startHelper } from '../src/main/updater';
 import { compareVersions, hashFromSums, parseVersion, readRelease, type InstallKind, type UpdateState } from '../src/shared/update';
 
 const results: { name: string; ok: boolean; kind: 'SIMULADO' | 'REAL'; info: string }[] = [];
@@ -74,6 +75,28 @@ async function failing(name: string, sc: Scenario, expect: RegExp) {
   if (t.u.state.status === 'available') await t.u.download();
   const ok = t.u.state.status === 'error' && expect.test(t.u.state.error ?? '') && t.files().length === 0;
   record(name, ok, `${t.u.state.status}: ${t.u.state.error ?? ''}${t.files().length ? ' · SOBRARAM ' + t.files() : ''}`);
+}
+
+/** Runs the real swap script on throwaway folders. A folder is "in use" when a process has it as its working directory. */
+async function swapCase(name: string, locked: boolean) {
+  const base = fs.mkdtempSync(path.join(sandbox, 'swap ç & [1] '));
+  const appDir = path.join(base, 'Baixador'), newDir = appDir + '.nova-2.0.0', backup = appDir + '.anterior-1.0.0';
+  for (const [dir, label] of [[appDir, 'antiga'], [newDir, 'nova']]) {
+    fs.mkdirSync(dir);
+    fs.copyFileSync(path.join(process.env.SystemRoot!, 'System32', 'whoami.exe'), path.join(dir, 'Baixador.exe'));
+    fs.writeFileSync(path.join(dir, 'versao.txt'), label);
+  }
+  const holder = locked ? spawn(path.join(process.env.SystemRoot!, 'System32', 'PING.EXE'), ['-n', '60', '127.0.0.1'], { cwd: appDir, stdio: 'ignore' }) : undefined;
+  const result = path.join(base, 'resultado.json');
+  const app = spawn(process.execPath, ['-e', 'setTimeout(()=>{}, 2500)'], { stdio: 'ignore' }); // stands in for the running app
+  await startHelper(path.join(base, 'aux'), { AppPid: app.pid!, AppDir: appDir, NewDir: newDir, Backup: backup, Exe: 'Baixador.exe', Result: result, Version: '2.0.0' });
+  for (let i = 0; i < 90 && !fs.existsSync(result); i++) await new Promise((r) => setTimeout(r, 1000));
+  await new Promise((r) => setTimeout(r, 1000));
+  holder?.kill();
+  const r = fs.existsSync(result) ? JSON.parse(fs.readFileSync(result, 'utf8').replace(/^\uFEFF/, '')) : undefined;
+  const now = fs.existsSync(path.join(appDir, 'versao.txt')) ? fs.readFileSync(path.join(appDir, 'versao.txt'), 'utf8') : '(sumiu)';
+  const ok = locked ? r?.ok === false && now === 'antiga' && !fs.existsSync(backup) : r?.ok === true && now === 'nova' && fs.readFileSync(path.join(backup, 'versao.txt'), 'utf8') === 'antiga' && !fs.existsSync(newDir);
+  record(name, ok, r ? r.message.slice(0, 90) : 'sem resultado');
 }
 
 async function main() {
@@ -147,6 +170,13 @@ async function main() {
     const t = make({ feed: 'http://127.0.0.1:9/latest' });
     await t.u.check();
     record('falha de conexão', t.u.state.status === 'error' && /conexão/.test(t.u.state.error!), t.u.state.error);
+  }
+
+  if (process.platform === 'win32') {
+    mode = 'REAL';
+    await swapCase('troca de pasta: o script real substitui a pasta e guarda a anterior', false);
+    await swapCase('troca de pasta: pasta em uso, nada é alterado', true);
+    mode = 'SIMULADO';
   }
 
   if (process.argv.includes('--real')) {

@@ -6,7 +6,7 @@ import {
 } from '@shared/convert';
 import { api, useStore } from '../lib/store';
 import { Badge, Button, Card, PageHeader, Progress, Segmented, Select, Toggle, cx } from '../components/ui';
-import { bytes, dirname, duration, eta } from '../lib/format';
+import { dirname, duration, eta } from '../lib/format';
 
 const GROUPS = ['Compartilhar', 'Qualidade', 'Compatibilidade', 'Resolução e FPS', 'Outras ferramentas'] as const;
 const mbText = (n?: number) => (n ? `${(n / MB).toLocaleString('pt-BR', { maximumFractionDigits: n < 10 * MB ? 1 : 0 })} MB` : '—');
@@ -146,7 +146,7 @@ function Editor({ probe, hw, gpuEnabled, onChangeFile, dragging }: { probe: Medi
         <div className="min-w-0 flex-1">
           <div className="selectable truncate text-[14.5px] font-semibold" title={probe.path}>{probe.name}</div>
           <div className="mt-1.5 flex flex-wrap gap-1.5">
-            <Badge tone="accent">{bytes(probe.size)}</Badge>
+            <Badge tone="accent">{mbText(probe.size)}</Badge>
             {probe.width ? <Badge>{probe.width}×{probe.height}</Badge> : null}
             {probe.fps ? <Badge>{fpsText(probe.fps)}</Badge> : null}
             {probe.duration ? <Badge>{duration(probe.duration)}</Badge> : <Badge tone="warn">duração desconhecida</Badge>}
@@ -209,7 +209,7 @@ function Editor({ probe, hw, gpuEnabled, onChangeFile, dragging }: { probe: Medi
 
       <Card className="p-5">
         <div className="grid gap-4 sm:grid-cols-3">
-          <Summary title="Seu vídeo" lines={[probe.width ? `${probe.width}×${probe.height}${probe.fps ? ` · ${fpsText(probe.fps)}` : ''}` : 'Somente áudio', bytes(probe.size)]} />
+          <Summary title="Seu vídeo" lines={[probe.width ? `${probe.width}×${probe.height}${probe.fps ? ` · ${fpsText(probe.fps)}` : ''}` : 'Somente áudio', mbText(probe.size)]} />
           <Summary title="Saída" lines={planLines(plan)} />
           <Summary
             title="Tamanho estimado"
@@ -448,7 +448,7 @@ function JobPanel({ state: j, onRetryCpu }: { state: ConvertState; onRetryCpu?: 
       )}
       {j.status === 'done' && (
         <div className="mt-2 text-[13px]" data-testid="result">
-          {bytes(j.inputSize)} → <b>{bytes(j.outputSize)}</b> {saved > 0 ? `(${saved}% menor)` : saved < 0 ? `(${-saved}% maior)` : ''} · {duration(j.elapsed)} · {j.encoderLabel}
+          {mbText(j.inputSize)} → <b>{mbText(j.outputSize)}</b> {saved > 0 ? `(${saved}% menor)` : saved < 0 ? `(${-saved}% maior)` : ''} · {duration(j.elapsed)} · {j.encoderLabel}
           {j.overLimit && <div className="mt-1 text-warn">O arquivo ficou com {mbText(j.outputSize)}, acima do limite de {mbText(j.targetBytes)}, mesmo após as tentativas. Reduza a resolução ou aceite um limite maior.</div>}
         </div>
       )}
