@@ -9,11 +9,22 @@ const entries: LogEntry[] = [];
 let listener: ((e: LogEntry) => void) | null = null;
 let stream: fs.WriteStream | null = null;
 
+/** Logs contain links and local paths, so they are not kept forever. */
+export const LOG_DAYS = 14;
+function pruneOldLogs(dir: string) {
+  const limit = Date.now() - LOG_DAYS * 24 * 3600 * 1000;
+  for (const name of fs.readdirSync(dir)) {
+    const m = /^baixador-(\d{4}-\d{2}-\d{2})\.log$/.exec(name);
+    if (m && Date.parse(m[1]) < limit) try { fs.rmSync(path.join(dir, name)); } catch {}
+  }
+}
+
 function fileStream() {
   if (stream) return stream;
   try {
     const dir = path.join(dataDir(), 'logs');
     fs.mkdirSync(dir, { recursive: true });
+    pruneOldLogs(dir);
     const day = new Date().toISOString().slice(0, 10);
     stream = fs.createWriteStream(path.join(dir, `baixador-${day}.log`), { flags: 'a' });
   } catch {}

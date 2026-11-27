@@ -1,10 +1,24 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import type { ConvertRequest, ConvertSettings, ConvertState, EncoderPref, MediaProbe } from '@shared/convert';
 import type { Api, HistoryItem, Job, MediaInfo, PlaylistInfo, Settings, ToolStatus } from '@shared/types';
 
 declare global { interface Window { api: Api } }
 export const api = window.api;
 
-export type Page = 'home' | 'downloads' | 'completed' | 'history' | 'settings' | 'diagnostics';
+/** Converter page choices, kept here so they survive switching pages. */
+export interface ConverterUi {
+  probe?: MediaProbe;
+  mode: 'simple' | 'custom';
+  presetId: string;
+  overrides: Partial<ConvertSettings>;
+  limitMB?: number;
+  custom: ConvertSettings | null;
+  encoder: EncoderPref;
+  outputDir?: string;
+  retryCpu?: () => void;
+}
+
+export type Page = 'converter' | 'home' | 'downloads' | 'completed' | 'history' | 'settings' | 'diagnostics';
 
 export interface Toast {
   id: number;
@@ -39,6 +53,11 @@ interface Store {
   setHome: React.Dispatch<React.SetStateAction<HomeState>>;
   analyzeUrl: (url: string) => Promise<void>;
   tools: ToolStatus | null;
+  convert: ConvertState;
+  conv: ConverterUi;
+  setConv: React.Dispatch<React.SetStateAction<ConverterUi>>;
+  startConvert: (req: ConvertRequest) => Promise<{ ok: boolean; error?: string }>;
+  dismissConvert: () => void;
 }
 
 const Ctx = createContext<Store>(null as any);
@@ -53,6 +72,16 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [systemDark, setSystemDark] = useState(() => matchMedia('(prefers-color-scheme: dark)').matches);
   const [home, setHome] = useState<HomeState>({ url: '', phase: 'idle' });
   const [tools, setTools] = useState<ToolStatus | null>(null);
+  const [convert, setConvert] = useState<ConvertState>({ status: 'idle', progress: 0 });
+  const [conv, setConv] = useState<ConverterUi>({ mode: 'simple', presetId: 'whatsapp', overrides: {}, custom: null, encoder: 'auto' });
+  useEffect(() => { api.getConversion().then(setConvert); return api.onConversion(setConvert); }, []);
+  const startConvert = useCallback(async (req: ConvertRequest) => {
+    const r = await api.startConversion(req);
+    // a CPU retry is offered after a GPU failure, never started on its own
+    if (r.ok) setConv((c) => ({ ...c, retryCpu: () => { void startConvert({ ...req, pref: 'cpu' }); } }));
+    return r;
+  }, []);
+  const dismissConvert = useCallback(() => setConvert({ status: 'idle', progress: 0 }), []);
   const prevStatus = useRef(new Map<string, string>());
   const tid = useRef(1);
   const announced = useRef(new Set<string>());
@@ -132,8 +161,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const value = useMemo<Store>(
-    () => ({ settings, updateSettings, jobs, history, page, go, toasts, toast, dismiss, dark, home, setHome, analyzeUrl, tools }),
-    [settings, updateSettings, jobs, history, page, go, toasts, toast, dismiss, dark, home, analyzeUrl, tools],
+    () => ({ settings, updateSettings, jobs, history, page, go, toasts, toast, dismiss, dark, home, setHome, analyzeUrl, tools, convert, conv, setConv, startConvert, dismissConvert }),
+    [convert, conv, startConvert, dismissConvert, settings, updateSettings, jobs, history, page, go, toasts, toast, dismiss, dark, home, analyzeUrl, tools],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

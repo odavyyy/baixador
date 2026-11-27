@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer } from 'electron';
+import { contextBridge, ipcRenderer, webUtils } from 'electron';
 import type { Api } from '../shared/types';
 
 const on = (ch: string) => (cb: (...a: any[]) => void) => {
@@ -9,6 +9,24 @@ const on = (ch: string) => (cb: (...a: any[]) => void) => {
 const inv = (ch: string) => (...a: any[]) => ipcRenderer.invoke(ch, ...a);
 
 const api: Api = {
+  getUpdate: inv('update:state'),
+  checkUpdate: inv('update:check'),
+  downloadUpdate: inv('update:download'),
+  cancelUpdate: inv('update:cancel'),
+  installUpdate: inv('update:install'),
+  openReleasePage: inv('update:page'),
+  onUpdate: on('update:update'),
+  readDoc: inv('docs:read'),
+  openProjectLink: inv('project:link'),
+  pickVideo: inv('convert:pick'),
+  pathForFile: (file: File) => webUtils.getPathForFile(file),
+  probeVideo: inv('convert:probe'),
+  detectHardware: inv('convert:hardware'),
+  startConversion: inv('convert:start'),
+  cancelConversion: inv('convert:cancel'),
+  estimateConversion: inv('convert:estimate'),
+  getConversion: inv('convert:state'),
+  onConversion: on('convert:update'),
   getSettings: inv('settings:get'),
   setSettings: inv('settings:set'),
   pickFolder: inv('dialog:folder'),

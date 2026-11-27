@@ -3,5 +3,5 @@
   <rect x="1" y="1" width="328" height="64" rx="14" fill="url(#g)"/>
   <g transform="translate(26 20)" fill="none" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v13"/><path d="M6 11l6 6 6-6"/><path d="M4 22h16"/></g>
   <text x="68" y="30" font-family="Segoe UI, -apple-system, Helvetica, Arial, sans-serif" font-size="19" font-weight="700" fill="#ffffff">Baixar para Windows</text>
-  <text x="68" y="50" font-family="Segoe UI, -apple-system, Helvetica, Arial, sans-serif" font-size="13" fill="#ece9ff">Instalador .exe · v1.1.0 · 116 MB</text>
+  <text x="68" y="50" font-family="Segoe UI, -apple-system, Helvetica, Arial, sans-serif" font-size="13" fill="#ece9ff">Instalador .exe · v1.2.0 · 116 MB</text>
 </svg>

@@ -95,7 +95,8 @@ export function analyze(s: Settings, url: string): Promise<AnalyzeResult> {
   return new Promise((resolve) => {
     if (!fs.existsSync(s.ytdlpPath)) return resolve({ ok: false, error: 'O yt-dlp não foi encontrado. Confira o caminho em Configurações.' });
     void cancelAnalyze();
-    const args = [...baseArgs(s), '-J', '--no-playlist', '--flat-playlist', url];
+    // "--" so that nothing typed as a link can ever be read as a yt-dlp option
+    const args = [...baseArgs(s), '-J', '--no-playlist', '--flat-playlist', '--', url];
     logger.info('analyze', `yt-dlp ${args.join(' ')}`);
     const t0 = Date.now();
     const child = spawn(s.ytdlpPath, args, { windowsHide: true, env: childEnv() });

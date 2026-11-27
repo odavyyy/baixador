@@ -1,5 +1,8 @@
 // Types shared between the Electron main process and the React UI.
 
+import type { UpdateState } from './update';
+import type { ConvertRequest, ConvertSettings, ConvertState, EncoderPref, Hardware, MediaProbe } from './convert';
+
 export type Theme = 'dark' | 'light' | 'system';
 export type DownloadMode = 'video' | 'mp3' | 'audio' | 'video-original';
 export type FilenameStyle = 'title' | 'title-id' | 'channel-title' | 'date-title';
@@ -21,6 +24,8 @@ export interface Settings {
   notifications: boolean;
   embedMetadata: boolean;
   cookiesFromBrowser: CookieBrowser;
+  /** use NVIDIA NVENC in the converter (only after it passes the test) */
+  useGpu: boolean;
 }
 
 export interface VideoOption {
@@ -159,7 +164,33 @@ export type AnalyzeResult =
   | { ok: true; playlist: PlaylistInfo; info?: undefined }
   | { ok: false; error: string; detail?: string };
 
+export type ProbeResult = { ok: true; probe: MediaProbe } | { ok: false; error: string };
+export type HardwareResult = { ok: true; hardware: Hardware } | { ok: false; error: string };
+
+export type LegalDoc = 'privacy' | 'terms' | 'notices' | 'license' | 'thirdParty' | 'signing';
+
 export interface Api {
+  getUpdate(): Promise<UpdateState>;
+  checkUpdate(): Promise<UpdateState>;
+  downloadUpdate(): Promise<UpdateState>;
+  cancelUpdate(): Promise<void>;
+  installUpdate(): Promise<{ ok: boolean; error?: string }>;
+  openReleasePage(): Promise<void>;
+  onUpdate(cb: (s: UpdateState) => void): () => void;
+  readDoc(doc: LegalDoc): Promise<string>;
+  openProjectLink(link: 'issues' | 'repo'): Promise<void>;
+
+  pickVideo(): Promise<string | null>;
+  /** real path of a dropped or picked File (Electron no longer exposes File.path) */
+  pathForFile(file: File): string;
+  probeVideo(path: string): Promise<ProbeResult>;
+  detectHardware(force: boolean): Promise<HardwareResult>;
+  startConversion(req: ConvertRequest): Promise<{ ok: boolean; error?: string }>;
+  cancelConversion(): Promise<void>;
+  estimateConversion(input: string, settings: ConvertSettings, pref: EncoderPref, gpuEnabled: boolean): Promise<{ min: number; max: number } | { error: string }>;
+  getConversion(): Promise<ConvertState>;
+  onConversion(cb: (s: ConvertState) => void): () => void;
+
   getSettings(): Promise<Settings>;
   setSettings(patch: Partial<Settings>): Promise<Settings>;
   pickFolder(current?: string): Promise<string | null>;

@@ -3,6 +3,8 @@ import { CheckCircle2, ChevronDown, FolderOpen, Moon, Monitor, Sun, XCircle } fr
 import type { Settings, ToolStatus } from '@shared/types';
 import { api, useStore } from '../lib/store';
 import { Button, Card, PageHeader, Row, Segmented, Select, Toggle, cx } from '../components/ui';
+import { UpdatePanel } from '../components/UpdatePanel';
+import { AboutPanel } from '../components/AboutPanel';
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -136,6 +138,12 @@ export function SettingsPage() {
           </div>
         </div>
       </Section>
+
+      <section className="mb-6">
+        <h2 className="mb-2 text-[12px] font-medium uppercase tracking-wider text-faint">Sobre e atualizações</h2>
+        <UpdatePanel />
+        <AboutPanel />
+      </section>
 
       <section>
         <button onClick={() => setAdvanced((v) => !v)} className="mb-2 flex items-center gap-1 text-[12px] font-medium uppercase tracking-wider text-faint hover:text-muted">

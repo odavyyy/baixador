@@ -1,0 +1,138 @@
+# Builds the Windows app on a GitHub-hosted runner. It NEVER publishes a release: it only uploads artifacts.
+#
+# Signing (SignPath) is disabled until the project is approved. To enable it later, create in the repository:
+#   variables: SIGNPATH_ENABLED=true, SIGNPATH_ORGANIZATION_ID, SIGNPATH_PROJECT_SLUG, SIGNPATH_POLICY_SLUG
+#   secret:    SIGNPATH_API_TOKEN
+# No values are invented here. See CODE_SIGNING_POLICY.md and docs/ASSINATURA.md.
+name: build
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*.*.*']
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    outputs:
+      version: ${{ steps.meta.outputs.version }}
+      unpacked-artifact-id: ${{ steps.unpacked.outputs.artifact-id }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 26
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run test:updater
+      - id: meta
+        shell: pwsh
+        run: |
+          $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          if ($env:GITHUB_REF_TYPE -eq 'tag' -and $env:GITHUB_REF_NAME -ne "v$version") { throw "Tag $env:GITHUB_REF_NAME does not match package.json $version" }
+          "version=$version" >> $env:GITHUB_OUTPUT
+      - run: npm run dist -- --publish never
+      - name: Check file metadata
+        shell: pwsh
+        run: |
+          foreach ($file in @('release\win-unpacked\Baixador.exe', "release\Baixador-Setup-${{ steps.meta.outputs.version }}.exe")) {
+            $info = (Get-Item $file).VersionInfo
+            Write-Host "$file -> $($info.ProductName) $($info.ProductVersion)"
+            if ($info.ProductName -ne 'Baixador') { throw "Unexpected product name in $file" }
+            if (-not $info.ProductVersion.StartsWith('${{ steps.meta.outputs.version }}')) { throw "Unexpected product version in $file" }
+          }
+      - name: Checksums (unsigned build)
+        shell: pwsh
+        run: |
+          $lines = Get-ChildItem release -File | Where-Object { $_.Name -match '\.(exe|zip)$' } | Sort-Object Name |
+            ForEach-Object { "{0}  {1}" -f (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower(), $_.Name }
+          [IO.File]::WriteAllText("$PWD\release\SHA256SUMS.txt", ($lines -join "`n") + "`n")
+      - uses: actions/upload-artifact@v4
+        with:
+          name: unsigned-release-files
+          path: |
+            release/*.exe
+            release/*.zip
+            release/SHA256SUMS.txt
+          if-no-files-found: error
+      # the app folder, needed to sign Baixador.exe BEFORE it is packed
+      - id: unpacked
+        uses: actions/upload-artifact@v4
+        with:
+          name: unsigned-app-folder
+          path: release/win-unpacked
+          if-no-files-found: error
+
+  # Two signing requests are needed: first Baixador.exe, then the installer made from the signed folder.
+  sign:
+    needs: build
+    if: ${{ vars.SIGNPATH_ENABLED == 'true' && github.ref_type == 'tag' }}
+    runs-on: windows-latest
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 26
+          cache: npm
+      - run: npm ci
+      - name: Sign the application
+        uses: signpath/github-action-submit-signing-request@v3
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: ${{ vars.SIGNPATH_POLICY_SLUG }}
+          artifact-configuration-slug: app-folder
+          github-artifact-id: ${{ needs.build.outputs.unpacked-artifact-id }}
+          wait-for-completion: true
+          wait-for-completion-timeout-in-seconds: 3600
+          output-artifact-directory: signed-app
+      - name: Package from the signed folder
+        run: npx electron-builder --win --prepackaged signed-app --publish never
+      - id: unsigned-setup
+        uses: actions/upload-artifact@v4
+        with:
+          name: unsigned-installer
+          path: release/Baixador-Setup-*.exe
+          if-no-files-found: error
+      - name: Sign the installer
+        uses: signpath/github-action-submit-signing-request@v3
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: ${{ vars.SIGNPATH_POLICY_SLUG }}
+          artifact-configuration-slug: installer
+          github-artifact-id: ${{ steps.unsigned-setup.outputs.artifact-id }}
+          wait-for-completion: true
+          wait-for-completion-timeout-in-seconds: 3600
+          output-artifact-directory: signed-installer
+      - name: Verify signatures and create final checksums
+        shell: pwsh
+        run: |
+          Copy-Item signed-installer\*.exe release\ -Force
+          $files = @('signed-app\Baixador.exe') + (Get-ChildItem release\Baixador-Setup-*.exe).FullName
+          foreach ($file in $files) {
+            $sig = Get-AuthenticodeSignature $file
+            Write-Host "$file -> $($sig.Status) $($sig.SignerCertificate.Subject)"
+            if ($sig.Status -ne 'Valid') { throw "Invalid signature: $file" }
+          }
+          $lines = Get-ChildItem release -File | Where-Object { $_.Name -match '\.(exe|zip)$' } | Sort-Object Name |
+            ForEach-Object { "{0}  {1}" -f (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower(), $_.Name }
+          [IO.File]::WriteAllText("$PWD\release\SHA256SUMS.txt", ($lines -join "`n") + "`n")
+      - uses: actions/upload-artifact@v4
+        with:
+          name: signed-release-files
+          path: |
+            release/*.exe
+            release/*.zip
+            release/SHA256SUMS.txt
+          if-no-files-found: error

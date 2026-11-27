@@ -4,10 +4,12 @@
 
 # Baixador
 
+**Português** · [English](README.en.md)
+
 <p align="center">
-  <a href="https://github.com/odavyyy/baixador/releases/download/v1.1.0/Baixador-Setup-1.1.0.exe"><img src="docs/botoes/baixar-instalador.svg" alt="Baixar o instalador para Windows (v1.1.0)" width="330"></a>
+  <a href="https://github.com/odavyyy/baixador/releases/download/v1.2.0/Baixador-Setup-1.2.0.exe"><img src="docs/botoes/baixar-instalador.svg" alt="Baixar o instalador para Windows (v1.2.0)" width="330"></a>
   &nbsp;&nbsp;
-  <a href="https://github.com/odavyyy/baixador/releases/download/v1.1.0/Baixador-1.1.0-win-x64.zip"><img src="docs/botoes/baixar-portatil.svg" alt="Baixar a versão portátil (v1.1.0)" width="330"></a>
+  <a href="https://github.com/odavyyy/baixador/releases/download/v1.2.0/Baixador-1.2.0-win-x64.zip"><img src="docs/botoes/baixar-portatil.svg" alt="Baixar a versão portátil (v1.2.0)" width="330"></a>
 </p>
 
 <p align="center">
@@ -48,6 +50,10 @@ nada passa por um servidor nosso. (Veja [O que acessa a internet](#o-que-acessa-
   ser salvo em uma pasta com o nome da playlist. Em um link de vídeo que também faz parte de uma playlist,
   o app oferece ver a playlist inteira. Em playlists, a qualidade de vídeo é um limite ("até 1080p"),
   porque cada vídeo não é analisado antes.
+- **Conversor de vídeos.** Converta e reduza vídeos que já estão no computador, com presets prontos ou no modo
+  personalizado. Veja [Conversor](#conversor).
+- **Atualização pelo próprio app.** Em **Configurações → Sobre e atualizações**, só quando você clica. Veja
+  [Atualizações](#atualizações).
 - **Detecção de links copiados.** Copie um link em qualquer lugar e o app oferece colar.
 - **Configurações**
   - Pasta de destino (com o seletor do Windows), qualidade, formato e bitrate padrão, nome dos arquivos,
@@ -57,6 +63,80 @@ nada passa por um servidor nosso. (Veja [O que acessa a internet](#o-que-acessa-
 - **Diagnóstico.** Versões das ferramentas, botão **Atualizar yt-dlp** (`yt-dlp -U`) e registro técnico
   completo, que pode ser copiado ou exportado. No uso comum, aparecem apenas mensagens de erro curtas e
   claras. O botão **Detectar** fica em **Configurações → Programas**.
+
+## Conversor
+
+Abra **Conversor**, arraste um vídeo, escolha um preset e clique em **Converter**. O arquivo original nunca é
+alterado; a saída recebe o nome `vídeo (Preset).mp4`, sem sobrescrever nada.
+
+| Grupo | Presets |
+|---|---|
+| Compartilhar | **WhatsApp — até 180 MB**, Discord (limite opcional), Redes sociais |
+| Qualidade | Equilibrado, Alta qualidade, Arquivo menor |
+| Compatibilidade | MP4 universal, Alta compatibilidade (até 720p30, H.264 perfil Main 3.1) |
+| Resolução e FPS | Original, 2160p60, 1440p60, 1080p60/30/24, 720p60/30/24, 480p30 |
+| Outras ferramentas | Trocar formato sem recodificar, Extrair áudio MP3, WebM (VP9 + Opus) |
+
+"1080p" vale para o lado menor da imagem, então funciona também com vídeos na vertical. Por padrão o app **não
+amplia** a resolução nem aumenta o FPS. O **modo personalizado** permite escolher formato (MP4, MKV, WebM,
+MP3), codec (H.264, H.265, AV1, VP9, só os que funcionam no seu PC), encoder, resolução, FPS, qualidade,
+bitrate ou tamanho máximo, áudio (AAC, MP3, Opus ou remover) e metadados. Combinações inválidas não são
+aceitas.
+
+### Como funciona o limite do WhatsApp
+
+- O app usa **180.000.000 bytes** como teto (fica abaixo do limite em qualquer definição de "MB"). É um alvo de
+  configuração do Baixador; os limites de envio de outros serviços podem mudar.
+- Ele reserva 5% de margem, subtrai o áudio (AAC, 128 kbps, menor em vídeos longos) e divide o resto pela
+  duração para achar o bitrate do vídeo.
+- Não gasta mais do que o vídeo precisa: um vídeo curto fica bem menor que 180 MB.
+- Se o bitrate for baixo para a resolução original, reduz a resolução. Se nem assim a qualidade for aceitável,
+  não converte e oferece 360p ou um limite maior.
+- Na CPU usa duas passagens; na GPU, VBR com análise em dois passos. Se o arquivo passar do limite, tenta de
+  novo com bitrate menor, **até 3 tentativas**, e avisa se ainda ficar acima.
+- Reduzir muito um vídeo **perde qualidade**, principalmente em cenas com muito movimento.
+
+### CPU e NVIDIA NVENC
+
+- **CPU (libx264)** funciona em qualquer computador e costuma aproveitar melhor cada bit.
+- **NVENC** usa a placa NVIDIA e é bem mais rápido. O botão **Detectar aceleração GPU** faz uma codificação
+  curta de teste: não basta o encoder aparecer na lista do FFmpeg. Requer placa NVIDIA com NVENC, driver
+  compatível com a versão do seu FFmpeg e um FFmpeg que inclua NVENC. O app não instala driver nem CUDA.
+- A GPU só é usada se você ativar **Usar GPU**. Sem NVENC, tudo continua pela CPU. Se uma conversão na GPU
+  falhar, o app avisa e oferece **Tentar na CPU**; ele não recomeça sozinho.
+- O H.264 da NVENC não aceita imagens com mais de 4096 pixels de largura.
+
+Referência em um PC com RTX 5060 Ti (varia conforme o computador e o vídeo): um trecho 4K60 de 40 s (231 MB)
+virou 168 MB em 93 s pela CPU e 162 MB em 29 s pela GPU.
+
+### Limitações
+
+- Vídeos HDR são convertidos para SDR, e as cores podem ficar um pouco diferentes.
+- Legendas e faixas de dados não são copiadas; só a primeira faixa de áudio é mantida.
+- Uma conversão por vez.
+- Estimativa "por amostras" codifica três trechos curtos e mostra uma faixa. Não é garantia.
+- Compatibilidade: **MP4 + H.264 + AAC** é a mais ampla. H.265 e AV1 geram arquivos menores, mas não tocam em
+  todos os aparelhos. MKV e WebM não são aceitos por alguns apps e TVs.
+
+## Atualizações
+
+Em **Configurações → Sobre e atualizações**, clique em **Verificar atualizações**. O app consulta a última
+release estável deste repositório (ignora rascunhos, pré-lançamentos e versões iguais ou antigas), mostra as
+notas, baixa o arquivo, confere o tamanho e o **SHA-256** com o `SHA256SUMS.txt` e pede confirmação para
+instalar.
+
+- **Versão instalada:** baixa o instalador, roda em modo silencioso e reabre o app.
+- **Versão portátil:** baixa o zip, extrai ao lado, e troca a pasta depois que o app fecha. A pasta anterior
+  fica guardada como `<pasta>.anterior-<versão>` e pode ser apagada depois que você conferir. Se a pasta do app
+  tiver **outros arquivos seus**, a troca é recusada para não mexer neles.
+
+Quem usa a **1.0.0** precisa instalar a 1.2.0 manualmente uma vez, porque a 1.0.0 não tem o atualizador.
+
+## Code signing policy
+
+**Os executáveis do Baixador ainda não têm assinatura digital** e o projeto não foi aceito em nenhum programa
+de assinatura. Como os builds são feitos, quem aprova as versões e o que está planejado:
+[**Code signing policy**](CODE_SIGNING_POLICY.md).
 
 ## Capturas de tela
 
@@ -90,8 +170,8 @@ winget install DenoLand.Deno
 
 ## Instalação
 
-1. Baixe o `Baixador-Setup-1.1.0.exe` na página de [Releases](../../releases) e execute.
-   Há também a versão portátil, `Baixador-1.1.0-win-x64.zip`: extraia em qualquer pasta e abra o
+1. Baixe o `Baixador-Setup-1.2.0.exe` na página de [Releases](../../releases) e execute.
+   Há também a versão portátil, `Baixador-1.2.0-win-x64.zip`: extraia em qualquer pasta e abra o
    `Baixador.exe`.
 2. Abra o **Baixador**. Na primeira vez, ele procura o yt-dlp e o FFmpeg (veja abaixo). Se não
    encontrar, a tela inicial avisa, e você pode indicar os caminhos em **Configurações → Programas**.
@@ -133,6 +213,8 @@ npm ci
 | `npm run dev` | Modo desenvolvimento: servidor do Vite com recarga automática da interface, mais o Electron. Reinicie após alterar `src/main`. |
 | `npm start` | Verifica os tipos, compila e abre o app. |
 | `npm run build` | Apenas verifica os tipos e compila para `dist/`. |
+| `npm run test:updater` | Testes do atualizador (`-- --real` também testa contra o GitHub). |
+| `npm run test:convert -- <pasta>` | Testes reais do conversor; veja [tests/README.md](tests/README.md). |
 | `npm run dist` | Gera o instalador e o zip portátil para Windows em `release/`. |
 | `npm run notices` | Gera novamente o `THIRD_PARTY_NOTICES.md` a partir das licenças dos pacotes instalados. |
 | `npm run art` | Gera novamente o `build/icon.png` e o `docs/banner.png`. |
@@ -166,14 +248,17 @@ src/
   main/                 processo principal do Electron (Node.js)
     main.ts             janela, IPC, área de transferência, notificações, histórico
     ytdlp.ts            análise (yt-dlp -J), leitura dos formatos, mensagens de erro, detecção das ferramentas
+    convert.ts          conversor (ffprobe, teste de encoders, FFmpeg)
+    updater.ts          atualização pelo GitHub
     downloads.ts        fila, progresso, pausar/continuar/cancelar/tentar de novo, alternativa HLS
     store.ts            armazenamento em JSON em %APPDATA%\Baixador
     logger.ts           registro técnico (tela Diagnóstico e arquivo de log diário)
     preload.ts          API disponível para a interface (contextIsolation, sandbox)
   renderer/             interface em React (Vite + Tailwind CSS)
-    src/pages/          Início, Downloads, Concluídos, Histórico, Configurações, Diagnóstico
+    src/pages/          Início, Downloads, Concluídos, Histórico, Conversor, Configurações, Diagnóstico
     src/components/     componentes visuais
-  shared/types.ts       tipos usados pelos dois lados
+  shared/               tipos, regras do conversor e do atualizador
+tests/                  testes do conversor e do atualizador
 scripts/                modo desenvolvimento, empacotador do processo principal, arte e avisos de licença
 build/                  ícone do app (SVG, PNG e ICO)
 docs/                   capturas de tela, banner e o HTML que o gera
@@ -190,10 +275,14 @@ arquivos JSON em `%APPDATA%\Baixador`. As capas ficam na pasta `thumbs`, e os lo
   histórico.
 - **Atualizar yt-dlp** (em Diagnóstico) executa `yt-dlp -U`, que baixa a versão oficial. Isso só acontece
   quando você clica.
+- **Verificar atualizações** (em Configurações) consulta o GitHub e, se você pedir, baixa a nova versão.
+  Só quando você clica.
 - **Cookies do navegador** (desativado por padrão) permite que o yt-dlp leia os cookies do seu navegador
   para aquele site.
 
-É só isso. Não há telemetria, conta, atualização automática nem servidor nosso.
+É só isso. Não há telemetria, conta, verificação automática de atualizações nem servidor nosso. Detalhes na
+[Política de Privacidade](PRIVACY.md). Veja também os [Termos de uso](TERMS.md), o aviso sobre
+[conteúdo e marcas](CONTENT_NOTICE.md) e a [política de segurança](SECURITY.md).
 
 ## Problemas comuns
 
@@ -210,7 +299,7 @@ arquivos JSON em `%APPDATA%\Baixador`. As capas ficam na pasta `thumbs`, e os lo
 
 ## Testes e situação atual
 
-Versão 1.1.0. Testado no Windows 11 Pro x64, com o yt-dlp 2026.10.26 e uma versão do FFmpeg de novembro de 2026:
+Versão 1.2.0. Testado no Windows 11 Pro x64, com o yt-dlp 2026.10.26 e uma versão do FFmpeg de novembro de 2026:
 
 - Análise de links e lista de formatos no YouTube.
 - Um álbum do YouTube Music com 14 faixas, baixado inteiro em MP3 (VBR máxima), com dois downloads por vez,

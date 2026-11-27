@@ -72,4 +72,5 @@ export const defaultSettings: Settings = {
   notifications: true,
   embedMetadata: true,
   cookiesFromBrowser: 'none',
+  useGpu: false,
 };

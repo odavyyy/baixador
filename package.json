@@ -1,7 +1,7 @@
 {
   "name": "baixador",
   "productName": "Baixador",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "App simples para Windows que baixa vídeo e áudio com yt-dlp e FFmpeg.",
   "license": "MIT",
   "author": "odavyyy",
@@ -16,6 +16,8 @@
     "build:main": "node scripts/build-main.mjs",
     "build:renderer": "vite build",
     "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test:convert": "node scripts/run-test.mjs tests/convert-engine.ts",
+    "test:updater": "node scripts/run-test.mjs tests/updater.ts",
     "build": "npm run typecheck && npm run build:main && npm run build:renderer",
     "start": "npm run build && electron .",
     "dist": "npm run build && electron-builder --win",
@@ -31,7 +33,13 @@
     },
     "files": [
       "dist/**/*",
-      "package.json"
+      "package.json",
+      "LICENSE",
+      "THIRD_PARTY_NOTICES.md",
+      "PRIVACY.md",
+      "TERMS.md",
+      "CONTENT_NOTICE.md",
+      "CODE_SIGNING_POLICY.md"
     ],
     "win": {
       "target": [

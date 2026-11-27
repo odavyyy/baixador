@@ -7,6 +7,9 @@ import { dataDir, defaultDownloadDir, defaultSettings, JsonFile } from './store'
 import { logger } from './logger';
 import { analyze, autoDetect, cancelAnalyze, checkTools, updateYtdlp } from './ytdlp';
 import { DownloadManager } from './downloads';
+import { Converter, detectHardware, probeFile } from './convert';
+import { Updater } from './updater';
+import { RELEASES_PAGE, REPO, type InstallKind } from '../shared/update';
 
 app.setAppUserModelId('local.baixador.app');
 // Optional separate data folder (used for automated tests).
@@ -19,6 +22,23 @@ let win: BrowserWindow | null = null;
 let settings: JsonFile<Settings>;
 let history: JsonFile<HistoryItem[]>;
 let manager: DownloadManager;
+let converter: Converter;
+let updater: Updater;
+
+/** The same files make both distributions; only the installer leaves an uninstaller next to the exe. */
+function installKind(): InstallKind {
+  if (!app.isPackaged) return 'dev';
+  return fs.existsSync(path.join(path.dirname(process.execPath), `Uninstall ${path.basename(process.execPath)}`)) ? 'installed' : 'portable';
+}
+
+const DOCS: Record<string, string> = {
+  privacy: 'PRIVACY.md',
+  terms: 'TERMS.md',
+  notices: 'CONTENT_NOTICE.md',
+  license: 'LICENSE',
+  thirdParty: 'THIRD_PARTY_NOTICES.md',
+  signing: 'CODE_SIGNING_POLICY.md',
+};
 
 const thumbsDir = () => path.join(dataDir(), 'thumbs');
 const send = (ch: string, ...args: unknown[]) => { if (win && !win.isDestroyed()) win.webContents.send(ch, ...args); };
@@ -59,13 +79,16 @@ function createWindow() {
     titleBarStyle: 'hidden',
     titleBarOverlay: { color: '#00000000', symbolColor: dark ? '#c9ccd3' : '#3a3d45', height: 40 },
     icon: path.join(__dirname, '../renderer/icon.png'),
-    webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: true },
+    // spellcheck off: Chromium would otherwise download dictionaries on its own
+    webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: true, spellcheck: false },
   });
   win.once('ready-to-show', () => win?.show());
   win.webContents.setWindowOpenHandler(({ url }) => {
     if (/^https?:/.test(url)) shell.openExternal(url);
     return { action: 'deny' };
   });
+  // the window must never navigate away (e.g. a file dropped outside the converter)
+  win.webContents.on('will-navigate', (e) => e.preventDefault());
   const devUrl = process.env.VITE_DEV_URL;
   if (devUrl) win.loadURL(devUrl);
   else win.loadFile(path.join(__dirname, '../renderer/index.html'));
@@ -126,6 +149,30 @@ function registerIpc() {
   h('jobs:remove', (_e, id: string) => manager.remove(id));
   h('jobs:clear', () => manager.clearFinished());
 
+  h('convert:pick', async () => {
+    const r = await dialog.showOpenDialog(win!, { title: 'Escolher vídeo', properties: ['openFile'], filters: [{ name: 'Vídeos e áudios', extensions: ['mp4', 'mkv', 'mov', 'webm', 'avi', 'm4v', 'wmv', 'flv', 'ts', 'mts', '3gp', 'gif', 'mp3', 'm4a', 'wav', 'opus', 'ogg', 'flac'] }, { name: 'Todos os arquivos', extensions: ['*'] }] });
+    return r.canceled ? null : r.filePaths[0];
+  });
+  h('convert:probe', (_e, p: string) => probeFile(settings.value, p).then((probe) => ({ ok: true, probe }), (e) => ({ ok: false, error: e.message })));
+  h('convert:hardware', (_e, force: boolean) => detectHardware(settings.value, force).then((hardware) => ({ ok: true, hardware }), (e) => ({ ok: false, error: e.message })));
+  h('convert:start', (_e, req) => converter.start(req));
+  h('convert:cancel', () => converter.cancel());
+  h('convert:estimate', (_e, input, s, pref, gpu) => converter.estimate(input, s, pref, gpu));
+  h('convert:state', () => converter.state);
+
+  h('update:state', () => updater.state);
+  h('update:check', () => updater.check());
+  h('update:download', () => updater.download());
+  h('update:cancel', () => updater.cancel());
+  h('update:install', () => updater.install());
+  h('update:page', () => shell.openExternal(RELEASES_PAGE));
+  h('docs:read', (_e, doc: string) => {
+    const name = DOCS[doc];
+    if (!name) return '';
+    try { return fs.readFileSync(path.join(app.getAppPath(), name), 'utf8'); } catch { return 'Documento não encontrado nesta instalação.'; }
+  });
+  h('project:link', (_e, link: string) => shell.openExternal(link === 'issues' ? `https://github.com/${REPO}/issues` : `https://github.com/${REPO}`));
+
   h('history:list', () => history.value);
   h('history:remove', async (_e, id: string, deleteFile: boolean) => {
     const item = history.value.find((i) => i.id === id);
@@ -152,7 +199,12 @@ function registerIpc() {
     send('history:update', history.value);
   });
 
-  h('shell:openFile', (_e, p: string) => shell.openPath(p));
+  // "open" runs whatever Windows associates with the file, so only files this app produced are accepted
+  h('shell:openFile', (_e, p: string) => {
+    const known = [...history.value.map((i) => i.filePath), ...manager.list().map((j) => j.filePath), converter.state.output];
+    if (!known.includes(p)) return 'Arquivo desconhecido.';
+    return shell.openPath(p);
+  });
   h('shell:showInFolder', (_e, p: string) => shell.showItemInFolder(p));
   h('shell:openFolder', (_e, p: string) => { fs.mkdirSync(p, { recursive: true }); return shell.openPath(p); });
   h('fs:exists', (_e, p: string) => fs.existsSync(p));
@@ -220,6 +272,28 @@ app.whenReady().then(() => {
     },
   });
 
+  converter = new Converter(
+    () => settings.value,
+    (state) => send('convert:update', state),
+    (state) => {
+      if (state.status === 'done') notify('Conversão concluída', path.basename(state.output!), () => shell.showItemInFolder(state.output!));
+      else if (state.status === 'error') notify('A conversão falhou', state.error ?? '', () => send('navigate', 'converter'));
+    },
+  );
+
+  updater = new Updater({
+    version: app.getVersion(),
+    kind: installKind(),
+    appDir: path.dirname(process.execPath),
+    exeName: path.basename(process.execPath),
+    dataDir: dataDir(),
+    testFeed: process.env.BAIXADOR_UPDATE_FEED,
+    emit: (state) => send('update:update', state),
+    busy: () => (manager.activeCount() ? 'Há downloads em andamento. Aguarde ou pause antes de atualizar.' : converter.running ? 'Há uma conversão em andamento. Aguarde ou cancele antes de atualizar.' : undefined),
+    quit: () => app.quit(),
+  });
+  updater.cleanup();
+
   registerIpc();
   createWindow();
   void watchClipboard();
@@ -231,6 +305,6 @@ app.on('before-quit', async (e) => {
   if (quitting) return;
   e.preventDefault();
   quitting = true;
-  try { await manager?.shutdown(); settings?.saveNow(); history?.saveNow(); } finally { app.quit(); }
+  try { await converter?.cancel(); await manager?.shutdown(); settings?.saveNow(); history?.saveNow(); } finally { app.quit(); }
 });
 app.on('window-all-closed', () => app.quit());

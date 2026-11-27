@@ -1,6 +1,17 @@
 # Histórico de versões
 
-## 1.1.0 (27/11/2026)
+## 1.2.0 (27/11/2026)
+
+- Novo: **Conversor** de vídeos com FFmpeg, presets (incluindo WhatsApp até 180 MB), modo personalizado, teste real
+  da aceleração NVIDIA NVENC e alternativa pela CPU.
+- Novo: **atualização pelo próprio app** (instalada e portátil), com verificação SHA-256 e confirmação.
+- Novo: política de privacidade, termos, avisos de conteúdo e marcas, política de assinatura e de segurança.
+- Segurança: links passados ao yt-dlp depois de "--"; "Abrir arquivo" restrito a arquivos do próprio app;
+  registros com mais de 14 dias são apagados; verificação ortográfica do Chromium desativada.
+- Inclui as mudanças da 1.1.0, que não chegou a ser publicada:
+
+### 1.1.0 (não publicada)
+
 
 - Novo: download de playlists e álbuns, com seleção de itens, áudio ou vídeo e pasta com o nome da playlist.
 - Novo: botão "Ver playlist inteira" em links de vídeo que também fazem parte de uma playlist.

@@ -1,4 +1,4 @@
-import { AlertCircle, CheckCircle2, CircleCheckBig, Download, History, Home, Info, Settings, Stethoscope, X } from 'lucide-react';
+import { AlertCircle, CheckCircle2, CircleCheckBig, Clapperboard, Download, History, Home, Info, Settings, Stethoscope, X } from 'lucide-react';
 import { useStore, type Page } from './lib/store';
 import { cx } from './components/ui';
 import { HomePage } from './pages/Home';
@@ -7,12 +7,14 @@ import { CompletedPage } from './pages/Completed';
 import { HistoryPage } from './pages/History';
 import { SettingsPage } from './pages/Settings';
 import { DiagnosticsPage } from './pages/Diagnostics';
+import { ConverterPage } from './pages/Converter';
 
 const NAV: { id: Page; label: string; icon: typeof Home }[] = [
   { id: 'home', label: 'Início', icon: Home },
   { id: 'downloads', label: 'Downloads', icon: Download },
   { id: 'completed', label: 'Concluídos', icon: CircleCheckBig },
   { id: 'history', label: 'Histórico', icon: History },
+  { id: 'converter', label: 'Conversor', icon: Clapperboard },
 ];
 const NAV_BOTTOM: typeof NAV = [
   { id: 'diagnostics', label: 'Diagnóstico', icon: Stethoscope },
@@ -34,7 +36,7 @@ function Logo() {
 }
 
 function Sidebar() {
-  const { page, go, jobs, settings } = useStore();
+  const { page, go, jobs, settings, convert } = useStore();
   const active = jobs.filter((j) => j.status === 'downloading' || j.status === 'processing' || j.status === 'queued').length;
   const errors = jobs.filter((j) => j.status === 'error').length;
   const item = (n: (typeof NAV)[number]) => {
@@ -52,6 +54,7 @@ function Sidebar() {
         <span className={cx('absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-accent transition-all duration-200', on ? 'opacity-100' : 'opacity-0 h-2')} />
         <Icon size={17} strokeWidth={on ? 2.2 : 1.9} className={on ? 'text-accent' : ''} />
         <span className="flex-1 text-left">{n.label}</span>
+        {n.id === 'converter' && convert.status === 'running' && <span className="text-[11px] font-semibold tabular-nums text-accent">{Math.floor(convert.progress)}%</span>}
         {n.id === 'downloads' && active > 0 && <span className="grid h-5 min-w-5 place-items-center rounded-full bg-accent px-1.5 text-[11px] font-semibold text-white">{active}</span>}
         {n.id === 'downloads' && !active && errors > 0 && <span className="h-2 w-2 rounded-full bg-bad" />}
       </button>
@@ -106,7 +109,7 @@ function Toasts() {
 export function App() {
   const { page, settings } = useStore();
   if (!settings) return <div className="h-full bg-bg" />;
-  const Page = { home: HomePage, downloads: DownloadsPage, completed: CompletedPage, history: HistoryPage, settings: SettingsPage, diagnostics: DiagnosticsPage }[page];
+  const Page = { converter: ConverterPage, home: HomePage, downloads: DownloadsPage, completed: CompletedPage, history: HistoryPage, settings: SettingsPage, diagnostics: DiagnosticsPage }[page];
   return (
     <div className="flex h-full">
       <Sidebar />
