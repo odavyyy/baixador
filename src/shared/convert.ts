@@ -385,7 +385,7 @@ export function buildPlan(probe: MediaProbe, input: ConvertSettings, pref: Encod
 
     const tooLow = budget.videoKbps < MIN_VIDEO_KBPS || (bpp(budget.videoKbps, size.width, size.height, frameRate, codec) < BPP_FLOOR && !(sourceKbps && budget.videoKbps >= sourceKbps));
     // no point in spending more than the source or than what the picture can use
-    const ceiling = Math.min(usefulKbps(size.width, size.height, frameRate, codec), sourceKbps ? Math.max(MIN_VIDEO_KBPS, Math.round(sourceKbps * (codec === 'h264' && probe.vcodec !== 'h264' ? 1.5 : 1.1))) : Infinity);
+    const ceiling = Math.min(usefulKbps(size.width, size.height, frameRate, codec), sourceKbps ? Math.max(MIN_VIDEO_KBPS, Math.round(sourceKbps * (codec !== 'h264' || probe.vcodec === 'h264' ? 0.95 : 1.5))) : Infinity);
     plan.videoKbps = Math.min(budget.videoKbps, ceiling);
     if (plan.videoKbps < budget.videoKbps) plan.notes.push('O vídeo é curto ou leve: o arquivo deve ficar bem abaixo do limite, sem aumentar o tamanho à toa.');
     if (tooLow) {

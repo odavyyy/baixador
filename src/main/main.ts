@@ -169,7 +169,12 @@ function registerIpc() {
   h('docs:read', (_e, doc: string) => {
     const name = DOCS[doc];
     if (!name) return '';
-    try { return fs.readFileSync(path.join(app.getAppPath(), name), 'utf8'); } catch { return 'Documento não encontrado nesta instalação.'; }
+    // LICENSE and the notices are shipped next to the exe (electron-builder keeps them out of app.asar)
+    const beside = path.join(path.dirname(process.execPath), name === 'LICENSE' ? 'LICENSE.txt' : name);
+    for (const file of [path.join(app.getAppPath(), name), beside]) {
+      try { return fs.readFileSync(file, 'utf8'); } catch {}
+    }
+    return 'Documento não encontrado nesta instalação.';
   });
   h('project:link', (_e, link: string) => shell.openExternal(link === 'issues' ? `https://github.com/${REPO}/issues` : `https://github.com/${REPO}`));
 
