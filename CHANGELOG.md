@@ -1,14 +1,14 @@
-# Changelog
+# Histórico de versões
 
-## 1.0.0 — 2026-11-27
+## 1.0.0 (27/11/2026)
 
-First public version.
+Primeira versão pública.
 
-- Paste a link, analyse it with yt-dlp and pick from the real list of resolutions, frame rates and audio tracks.
-- MP4 (H.264 preferred), MKV (original streams), MP3 128–320 kbps with cover art, original audio without conversion.
-- Download queue with parallel downloads, real progress/speed/ETA, pause/resume, cancel, retry.
-- History, recent downloads, clipboard link detection, Windows notifications.
-- Settings: download folder, defaults, file-name pattern, theme, optional browser cookies.
-- Automatic detection of yt-dlp and FFmpeg (C:\yt-dlp, C:\ffmpeg, winget, Scoop, Chocolatey, PATH).
-- Diagnostics page with tool versions, "Update yt-dlp" and the technical log.
-- Windows installer (NSIS) and portable zip.
+- Cole um link, analise com o yt-dlp e escolha na lista real de resoluções, taxas de quadros e faixas de áudio.
+- MP4 (priorizando H.264), MKV (vídeo e áudio originais), MP3 de 128 a 320 kbps com capa e áudio original sem conversão.
+- Fila com downloads simultâneos, progresso, velocidade e tempo restante reais, pausar e continuar, cancelar e tentar de novo.
+- Histórico, downloads recentes, detecção de links copiados e notificações do Windows.
+- Configurações: pasta de destino, padrões, nome dos arquivos, tema e cookies do navegador (opcional).
+- Detecção automática do yt-dlp e do FFmpeg (C:\yt-dlp, C:\ffmpeg, winget, Scoop, Chocolatey e PATH).
+- Tela de diagnóstico com as versões das ferramentas, o botão "Atualizar yt-dlp" e o registro técnico.
+- Instalador para Windows (NSIS) e versão portátil em zip.

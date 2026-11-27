@@ -2,7 +2,7 @@
   "name": "baixador",
   "productName": "Baixador",
   "version": "1.0.0",
-  "description": "A simple Windows desktop app for downloading video and audio with yt-dlp and FFmpeg.",
+  "description": "App simples para Windows que baixa vídeo e áudio com yt-dlp e FFmpeg.",
   "license": "MIT",
   "author": "odavyyy",
   "repository": {

@@ -1,70 +1,70 @@
 <p align="center">
-  <img src="docs/banner.png" alt="Baixador — a simple Windows app for yt-dlp and FFmpeg" width="100%">
+  <img src="docs/banner.png" alt="Baixador: um app simples para Windows que usa o yt-dlp e o FFmpeg" width="100%">
 </p>
 
 # Baixador
 
-Baixador is a Windows desktop app for downloading video and audio with
-[yt-dlp](https://github.com/yt-dlp/yt-dlp) and [FFmpeg](https://ffmpeg.org/). You paste a link, see
-the qualities that are actually available, pick one and download. You never type a command.
+O Baixador é um app para Windows que baixa vídeo e áudio com o
+[yt-dlp](https://github.com/yt-dlp/yt-dlp) e o [FFmpeg](https://ffmpeg.org/). Você cola um link, vê as
+qualidades que existem de verdade, escolhe uma e baixa, sem digitar nenhum comando.
 
-It doesn't bundle the yt-dlp or FFmpeg programs. It drives the copies you already have installed, and nothing goes
-through a server of ours. (See [What goes online](#what-goes-online).)
+Os programas yt-dlp e FFmpeg não vêm junto com o app. Ele usa as cópias que você já tem instaladas, e
+nada passa por um servidor nosso. (Veja [O que acessa a internet](#o-que-acessa-a-internet).)
 
-> **Language:** the interface is currently in **Brazilian Portuguese** only. This README is in English;
-> a Portuguese version is in [README.pt-BR.md](README.pt-BR.md).
+## Funcionalidades
 
-## Features
+- **Análise real do link.** Executa `yt-dlp -J` e mostra título, canal, duração, capa e todas as
+  resoluções e taxas de quadros que o site oferece, com o tamanho estimado quando o yt-dlp informa.
+- **Vídeo**
+  - **MP4:** prioriza H.264, para o arquivo abrir em qualquer player. Acima de 1080p, alguns sites só
+    oferecem VP9/AV1.
+  - **MKV:** o melhor vídeo e áudio exatamente como o site entrega, sem conversão.
+- **Áudio**
+  - **MP3:** 128, 192, 256 ou 320 kbps, convertido pelo FFmpeg, com capa, título e artista gravados no arquivo.
+  - **Áudio original:** sem conversão (por exemplo, AAC `.m4a` ou Opus), escolhido entre as faixas que o
+    yt-dlp lista.
+- **Gerenciador de downloads**
+  - Fila com número configurável de downloads simultâneos.
+  - Progresso, velocidade, tempo restante e tamanho reais, lidos da saída do yt-dlp.
+  - Pausar e continuar (o yt-dlp retoma o arquivo `.part`), cancelar (os arquivos parciais são apagados),
+    tentar de novo, abrir o arquivo ou mostrar na pasta.
+- **Histórico e downloads recentes**
+  - Busca, filtro por vídeo ou áudio e capa salva no computador para cada download.
+  - Remover um item não apaga o arquivo. É preciso marcar uma opção e confirmar, e mesmo assim ele vai
+    para a Lixeira.
+- **Detecção de links copiados.** Copie um link em qualquer lugar e o app oferece colar.
+- **Configurações**
+  - Pasta de destino (com o seletor do Windows), qualidade, formato e bitrate padrão, nome dos arquivos,
+    abrir a pasta ao concluir, downloads simultâneos e tema escuro, claro ou do sistema.
+  - Notificações do Windows e uso opcional dos cookies do navegador, para vídeos com restrição de idade
+    ou que exigem login.
+- **Diagnóstico.** Versões das ferramentas, botão **Atualizar yt-dlp** (`yt-dlp -U`) e registro técnico
+  completo, que pode ser copiado ou exportado. No uso comum, aparecem apenas mensagens de erro curtas e
+  claras. O botão **Detectar** fica em **Configurações → Programas**.
 
-- **Real link analysis.** Runs `yt-dlp -J`, then shows the title, channel, duration, thumbnail and every
-  resolution / frame rate the site offers, with estimated file sizes when yt-dlp reports them.
-- **Video**
-  - **MP4:** prefers H.264 so the file plays everywhere; above 1080p some sites only offer VP9/AV1.
-  - **MKV:** the best streams exactly as the site serves them, no re-encoding.
-- **Audio**
-  - **MP3:** 128, 192, 256 or 320 kbps, converted by FFmpeg, with the cover art and title/artist tags embedded.
-  - **Original audio:** no conversion (e.g. AAC `.m4a` or Opus), picked from the tracks yt-dlp lists.
-- **Download manager**
-  - A queue with a configurable number of parallel downloads.
-  - Real progress, speed, ETA and size, parsed from yt-dlp's output.
-  - Pause/resume (yt-dlp continues the `.part` file), cancel (partial files are cleaned up), retry,
-    open the file, show it in its folder.
-- **History and recent downloads**
-  - Search and a video/audio filter, with a locally cached thumbnail per download.
-  - Removing an entry never deletes the file. You have to tick a box and confirm, and even then the file
-    goes to the Recycle Bin.
-- **Clipboard detection.** Copy a link anywhere and the app offers to paste it.
-- **Settings**
-  - Download folder (native folder picker), default quality / format / bitrate, file-name pattern,
-    "open folder when done", parallel downloads, dark/light/system theme.
-  - Windows notifications, plus optional cookies from your browser for age-restricted or login-only videos.
-- **Diagnostics.** Tool versions, a "Detect" button for the yt-dlp/FFmpeg paths, an "Update yt-dlp"
-  button (`yt-dlp -U`), and the full technical log (copy / export). Users see short, friendly error
-  messages; the raw output stays here.
+## Capturas de tela
 
-## Screenshots
-
-| Paste a link | Pick a quality |
+| Cole um link | Escolha a qualidade |
 |---|---|
-| ![Home screen](docs/screenshots/home.png) | ![Link analysis with real resolutions](docs/screenshots/analyze.png) |
-| **MP3 bitrate** | **Downloads in progress** |
-| ![Audio options](docs/screenshots/audio.png) | ![Two parallel downloads and a queued one](docs/screenshots/downloads.png) |
-| **Recently completed** | **Settings** |
-| ![Completed downloads](docs/screenshots/completed.png) | ![Settings page](docs/screenshots/settings.png) |
+| ![Tela inicial](docs/screenshots/home.png) | ![Análise do link com as resoluções reais](docs/screenshots/analyze.png) |
+| **Bitrate do MP3** | **Downloads em andamento** |
+| ![Opções de áudio](docs/screenshots/audio.png) | ![Dois downloads simultâneos e um na fila](docs/screenshots/downloads.png) |
+| **Concluídos** | **Configurações** |
+| ![Downloads concluídos](docs/screenshots/completed.png) | ![Página de configurações](docs/screenshots/settings.png) |
 
-All screenshots were taken from the running app during real downloads. The video shown is
-*Big Buck Bunny* (see [Credits](#credits)). The yellow notice in two of them is the app's real warning
-that the installed yt-dlp was out of date at the time.
+Todas as capturas foram feitas no app em funcionamento, durante downloads reais. O vídeo que aparece é
+*Big Buck Bunny* (veja os [Créditos](#créditos)). O aviso amarelo em duas delas é o aviso real do app de
+que o yt-dlp instalado estava desatualizado naquele momento.
 
-## Requirements
+## Requisitos
 
-- **Windows 10 or 11, 64-bit.** Only tested on Windows 11 x64.
-- **yt-dlp** — <https://github.com/yt-dlp/yt-dlp#installation>
-- **FFmpeg** (with ffprobe) — <https://ffmpeg.org/download.html>
-- For YouTube, recent yt-dlp versions also need a JavaScript runtime such as Deno.
-  See the yt-dlp wiki: <https://github.com/yt-dlp/yt-dlp/wiki/EJS>
+- **Windows 10 ou 11, 64 bits.** Testado apenas no Windows 11 x64.
+- **yt-dlp:** <https://github.com/yt-dlp/yt-dlp#installation>
+- **FFmpeg** (com o ffprobe): <https://ffmpeg.org/download.html>
+- Para o YouTube, as versões recentes do yt-dlp também precisam de um runtime JavaScript, como o Deno.
+  Veja a wiki do yt-dlp: <https://github.com/yt-dlp/yt-dlp/wiki/EJS>
 
-One way to install all three is winget:
+Uma forma de instalar os três é pelo winget:
 
 ```powershell
 winget install yt-dlp.yt-dlp
@@ -72,37 +72,39 @@ winget install Gyan.FFmpeg
 winget install DenoLand.Deno
 ```
 
-## Install
+## Instalação
 
-1. Download `Baixador-Setup-1.0.0.exe` from the [Releases](../../releases) page and run it.
-   There is also a portable `Baixador-1.0.0-win-x64.zip`: extract it anywhere and run `Baixador.exe`.
-2. Open **Baixador**. On first start it looks for yt-dlp and FFmpeg (see below). If it can't find them,
-   the home screen tells you, and you can set the paths in **Configurações → Programas**.
+1. Baixe o `Baixador-Setup-1.0.0.exe` na página de [Releases](../../releases) e execute.
+   Há também a versão portátil, `Baixador-1.0.0-win-x64.zip`: extraia em qualquer pasta e abra o
+   `Baixador.exe`.
+2. Abra o **Baixador**. Na primeira vez, ele procura o yt-dlp e o FFmpeg (veja abaixo). Se não
+   encontrar, a tela inicial avisa, e você pode indicar os caminhos em **Configurações → Programas**.
 
-The installer and the executable are **not code-signed**, so Windows SmartScreen will probably warn you.
-Click *More info → Run anyway* if you trust the build, or build it yourself from source.
+O instalador e o executável **não têm assinatura digital**, então o Windows SmartScreen provavelmente
+vai mostrar um aviso. Se você confia no arquivo, clique em *Mais informações → Executar assim mesmo*.
+Você também pode compilar a partir do código-fonte.
 
-### Where the app looks for yt-dlp and FFmpeg
+### Onde o app procura o yt-dlp e o FFmpeg
 
-On first start, and whenever a configured path stops existing, it checks in this order:
+Na primeira execução, e sempre que um caminho configurado deixa de existir, ele procura nesta ordem:
 
-1. `C:\yt-dlp\yt-dlp.exe` and `C:\ffmpeg\bin\ffmpeg.exe` (or `C:\Program Files\ffmpeg\bin\ffmpeg.exe`)
-2. winget links: `%LOCALAPPDATA%\Microsoft\WinGet\Links`
-3. Scoop shims: `%USERPROFILE%\scoop\shims`
+1. `C:\yt-dlp\yt-dlp.exe` e `C:\ffmpeg\bin\ffmpeg.exe` (ou `C:\Program Files\ffmpeg\bin\ffmpeg.exe`)
+2. Atalhos do winget: `%LOCALAPPDATA%\Microsoft\WinGet\Links`
+3. Atalhos do Scoop: `%USERPROFILE%\scoop\shims`
 4. Chocolatey: `%ProgramData%\chocolatey\bin`
-5. Anything on your `PATH` (`where yt-dlp.exe`)
+5. Qualquer um que esteja no `PATH` (`where yt-dlp.exe`)
 
-None of these paths is required. You can point the app at any `yt-dlp.exe` / `ffmpeg.exe` in
-Settings. FFmpeg's folder is passed to yt-dlp with `--ffmpeg-location`, so `ffprobe.exe` must be next to
-`ffmpeg.exe`.
+Nenhum desses caminhos é obrigatório. Nas configurações, você pode apontar para qualquer `yt-dlp.exe` e
+`ffmpeg.exe`. A pasta do FFmpeg é enviada ao yt-dlp com `--ffmpeg-location`, por isso o `ffprobe.exe`
+precisa estar ao lado do `ffmpeg.exe`.
 
-The default download folder is `C:\yt-dlp\Downloads` if `C:\yt-dlp` exists, otherwise
-`Downloads\Baixador` in your user folder.
+A pasta de downloads padrão é `C:\yt-dlp\Downloads` se `C:\yt-dlp` existir. Caso contrário, é
+`Downloads\Baixador` na sua pasta de usuário.
 
-## Build from source
+## Compilar a partir do código-fonte
 
-You need [Node.js](https://nodejs.org/) and npm. It was developed and tested with Node 26 and npm 11;
-older versions may work but haven't been tried.
+Você precisa do [Node.js](https://nodejs.org/) e do npm. O projeto foi desenvolvido e testado com Node 26
+e npm 11. Versões mais antigas podem funcionar, mas não foram testadas.
 
 ```powershell
 git clone https://github.com/odavyyy/baixador.git
@@ -110,129 +112,131 @@ cd baixador
 npm ci
 ```
 
-| Command | What it does |
+| Comando | O que faz |
 |---|---|
-| `npm run dev` | Vite dev server with hot reload for the UI, plus Electron. Restart it after changing `src/main`. |
-| `npm start` | Type-check, build, and run the app. |
-| `npm run build` | Type-check and build into `dist/` only. |
-| `npm run dist` | Build the Windows installer and the portable zip into `release/`. |
-| `npm run notices` | Regenerate `THIRD_PARTY_NOTICES.md` from the installed packages' license files. |
-| `npm run art` | Re-render `build/icon.png` and `docs/banner.png` from their sources. |
+| `npm run dev` | Modo desenvolvimento: servidor do Vite com recarga automática da interface, mais o Electron. Reinicie após alterar `src/main`. |
+| `npm start` | Verifica os tipos, compila e abre o app. |
+| `npm run build` | Apenas verifica os tipos e compila para `dist/`. |
+| `npm run dist` | Gera o instalador e o zip portátil para Windows em `release/`. |
+| `npm run notices` | Gera novamente o `THIRD_PARTY_NOTICES.md` a partir das licenças dos pacotes instalados. |
+| `npm run art` | Gera novamente o `build/icon.png` e o `docs/banner.png`. |
 
-Notes:
+Observações:
 
-- The Electron binary is downloaded automatically the first time you run `npm run dev` or `npm start`.
-  If that fails, delete `node_modules/electron` and run `npx install-electron`.
-- npm 11 asks before running install scripts. The two the build needs (`esbuild` and
-  `electron-winstaller`) are already approved in `package.json` → `allowScripts`.
-- `npm run dist` uses NSIS, which can't handle very long paths. If you see
-  `!include: could not open file ... .nsh`, build from a shorter folder such as `C:\src\baixador`.
-- `npm audit` currently reports moderate issues in electron-builder's own dependencies (build tooling,
-  not shipped in the app).
-- `build/icon.ico` was assembled from `build/icon.png` at 16–256 px. Any tool that writes multi-size
-  `.ico` files works if you change the icon.
+- O Electron é baixado automaticamente na primeira vez que você roda `npm run dev` ou `npm start`. Se
+  falhar, apague `node_modules/electron` e rode `npx install-electron`.
+- O npm 11 pede autorização para rodar scripts de instalação. Os dois necessários (`esbuild` e
+  `electron-winstaller`) já estão liberados em `allowScripts`, no `package.json`.
+- O `npm run dist` usa o NSIS, que não aceita caminhos muito longos. Se aparecer
+  `!include: could not open file ... .nsh`, compile em uma pasta com caminho mais curto, como
+  `C:\src\baixador`.
+- O `npm audit` aponta problemas de gravidade moderada em dependências do electron-builder (ferramenta de
+  compilação, que não vai dentro do app).
+- O `build/icon.ico` foi montado a partir do `build/icon.png`, nos tamanhos de 16 a 256 px. Se trocar o
+  ícone, use qualquer ferramenta que gere um `.ico` com vários tamanhos.
 
-### Testing with a separate data folder
+### Testar com uma pasta de dados separada
 
-Set `BAIXADOR_DATA_DIR` to keep test settings and history away from your normal ones:
+Defina `BAIXADOR_DATA_DIR` para não misturar as configurações e o histórico de teste com os normais:
 
 ```powershell
 $env:BAIXADOR_DATA_DIR = "$env:TEMP\baixador-test"; npm start
 ```
 
-## Project structure
+## Estrutura do projeto
 
 ```
 src/
-  main/                 Electron main process (Node.js)
-    main.ts             window, IPC handlers, clipboard watcher, notifications, history
-    ytdlp.ts            link analysis (yt-dlp -J), format parsing, friendly errors, tool detection
-    downloads.ts        queue, progress parsing, pause/resume/cancel/retry, HLS fallback
-    store.ts            JSON storage in %APPDATA%\Baixador
-    logger.ts           technical log (Diagnóstico page + daily log file)
-    preload.ts          the API exposed to the UI (contextIsolation, sandbox)
-  renderer/             React UI (Vite + Tailwind CSS)
+  main/                 processo principal do Electron (Node.js)
+    main.ts             janela, IPC, área de transferência, notificações, histórico
+    ytdlp.ts            análise (yt-dlp -J), leitura dos formatos, mensagens de erro, detecção das ferramentas
+    downloads.ts        fila, progresso, pausar/continuar/cancelar/tentar de novo, alternativa HLS
+    store.ts            armazenamento em JSON em %APPDATA%\Baixador
+    logger.ts           registro técnico (tela Diagnóstico e arquivo de log diário)
+    preload.ts          API disponível para a interface (contextIsolation, sandbox)
+  renderer/             interface em React (Vite + Tailwind CSS)
     src/pages/          Início, Downloads, Concluídos, Histórico, Configurações, Diagnóstico
-    src/components/     small UI kit
-  shared/types.ts       types shared by both sides
-scripts/                dev runner, main-process bundler, artwork renderer, notices generator
-build/                  app icon (SVG source, PNG, ICO)
-docs/                   screenshots, banner and its HTML source
+    src/components/     componentes visuais
+  shared/types.ts       tipos usados pelos dois lados
+scripts/                modo desenvolvimento, empacotador do processo principal, arte e avisos de licença
+build/                  ícone do app (SVG, PNG e ICO)
+docs/                   capturas de tela, banner e o HTML que o gera
 ```
 
-The UI talks to the main process only through the preload API. Settings, history and the download
-queue are plain JSON files in `%APPDATA%\Baixador`, thumbnails are cached in its `thumbs` folder, and
-logs go to `logs\baixador-YYYY-MM-DD.log`.
+A interface só conversa com o processo principal pela API do preload. Configurações, histórico e fila são
+arquivos JSON em `%APPDATA%\Baixador`. As capas ficam na pasta `thumbs`, e os logs em
+`logs\baixador-AAAA-MM-DD.log`.
 
-## What goes online
+## O que acessa a internet
 
-- **yt-dlp** contacts the site whose link you paste, for analysis and download, as it does from the
-  command line.
-- **Thumbnails** are loaded from the site's image server for the preview and cached locally for the
-  history.
-- **Update yt-dlp** (Diagnostics) runs `yt-dlp -U`, which downloads the official release. It only runs
-  when you click it.
-- **Cookies from browser** (off by default) lets yt-dlp read your browser's cookies for that site.
+- O **yt-dlp** acessa o site do link que você cola, para analisar e baixar, como faria pela linha de comando.
+- As **capas** são carregadas do servidor de imagens do site, para a prévia, e salvas no computador para o
+  histórico.
+- **Atualizar yt-dlp** (em Diagnóstico) executa `yt-dlp -U`, que baixa a versão oficial. Isso só acontece
+  quando você clica.
+- **Cookies do navegador** (desativado por padrão) permite que o yt-dlp leia os cookies do seu navegador
+  para aquele site.
 
-That's all. There is no telemetry, no account, no auto-update and no server of ours involved.
+É só isso. Não há telemetria, conta, atualização automática nem servidor nosso.
 
-## Troubleshooting
+## Problemas comuns
 
-| Problem | What to try |
+| Problema | O que tentar |
 |---|---|
-| "yt-dlp não foi encontrado" / "FFmpeg não foi encontrado" | Install it (see Requirements), then **Configurações → Programas → Detectar**, or browse to the `.exe`. |
-| YouTube: HTTP 403, missing formats, or the yellow "pode estar desatualizado" notice | Update yt-dlp (**Diagnóstico → Atualizar yt-dlp**) and make sure a JavaScript runtime is installed ([EJS wiki](https://github.com/yt-dlp/yt-dlp/wiki/EJS)). After a 403 the app retries once using HLS streams. That code path exists but was not triggered in testing. |
-| "Sign in to confirm you're not a bot" / age-restricted | **Configurações → Avançado → Usar cookies do navegador**, with a browser where you're logged in. Chromium browsers often lock their cookie database while open; Firefox is usually easier. |
-| A downloaded file has "(720p 60fps)" in its name | A file with the plain name already existed (e.g. another quality). The app never overwrites. |
-| The MP4 won't play | Above 1080p, sites often only offer VP9/AV1. Pick 1080p or lower for H.264, or use a player like VLC/mpv. |
-| Playlists or live streams | Not supported yet; the app tells you and doesn't start a download. |
-| Something else | **Diagnóstico** shows the full yt-dlp output; you can export it when opening an issue. |
+| "yt-dlp não foi encontrado" ou "FFmpeg não foi encontrado" | Instale (veja os Requisitos) e vá em **Configurações → Programas → Detectar**, ou escolha o `.exe`. |
+| YouTube: erro 403, formatos faltando ou o aviso amarelo "pode estar desatualizado" | Atualize o yt-dlp (**Diagnóstico → Atualizar yt-dlp**) e confira se há um runtime JavaScript instalado ([wiki EJS](https://github.com/yt-dlp/yt-dlp/wiki/EJS)). Após um erro 403, o app tenta mais uma vez usando HLS. Essa parte do código existe, mas não foi acionada nos testes. |
+| "Sign in to confirm you're not a bot" ou restrição de idade | **Configurações → Avançado → Usar cookies do navegador**, com um navegador em que você esteja logado. Navegadores baseados no Chromium costumam bloquear o banco de cookies enquanto estão abertos. O Firefox geralmente é mais fácil. |
+| O arquivo baixado tem "(720p 60fps)" no nome | Já existia um arquivo com o nome simples (por exemplo, em outra qualidade). O app não sobrescreve. |
+| O MP4 não abre | Acima de 1080p, os sites muitas vezes só oferecem VP9/AV1. Escolha 1080p ou menos para ter H.264, ou use um player como VLC ou mpv. |
+| Playlists ou transmissões ao vivo | Ainda não são suportadas. O app avisa e não inicia o download. |
+| Outro problema | A tela **Diagnóstico** mostra a saída completa do yt-dlp, que você pode exportar ao abrir uma issue. |
 
-## Status and testing
+## Testes e situação atual
 
-Version 1.0.0. Tested on Windows 11 Pro x64 with yt-dlp 2026.10.26 and an FFmpeg 2026-11 build:
+Versão 1.0.0. Testado no Windows 11 Pro x64, com o yt-dlp 2026.10.26 e uma versão do FFmpeg de novembro de 2026:
 
-- Link analysis and the format list on YouTube.
-- MP4 (240p, 720p60, 1080p60), MKV (240p AV1, 1440p60), MP3 (128/192/320 kbps with cover art),
-  original M4A.
-- Two downloads in parallel plus a queued one; pause/resume, cancel with cleanup, retry.
-- Friendly error for a non-video link, and removing a history entry without deleting the file.
-- Automatic detection of yt-dlp/FFmpeg (startup and the "Detect" button), the missing-tool notice.
-- The portable build (extracted and run) and the unpacked app; a clean `npm ci` → `npm run dev` /
-  `npm run build` / `npm run dist`.
+- Análise de links e lista de formatos no YouTube.
+- MP4 (240p, 720p60 e 1080p60), MKV (240p AV1 e 1440p60), MP3 (128, 192 e 320 kbps com capa) e M4A original.
+- Dois downloads simultâneos com um na fila; pausar e continuar, cancelar com limpeza e tentar de novo.
+- Mensagem de erro clara para um link que não é de vídeo, e remoção de um item do histórico sem apagar o arquivo.
+- Detecção automática do yt-dlp e do FFmpeg (na abertura e pelo botão **Detectar**) e o aviso de ferramenta ausente.
+- A versão portátil (extraída e executada) e o app descompactado; `npm ci` do zero, seguido de
+  `npm run dev`, `npm run build` e `npm run dist`.
 
-Not tested yet: other sites (Instagram, TikTok, etc.), Windows 10, running the NSIS installer and
-uninstaller, the browser-cookies option, the HLS fallback after a 403, clipboard link detection,
-Windows notifications, the "Update yt-dlp" button, deleting a file to the Recycle Bin from History,
-file-name patterns other than "Título", "open folder when done", and log export.
+Ainda não testado: outros sites (Instagram, TikTok etc.), Windows 10, o instalador e o desinstalador,
+a opção de cookies do navegador, a alternativa HLS após um erro 403, a detecção de links copiados, as
+notificações do Windows, o botão **Atualizar yt-dlp**, apagar um arquivo para a Lixeira pelo Histórico,
+padrões de nome diferentes de "Título", abrir a pasta ao concluir e a exportação do log.
 
-## How it was made
+## Como foi feito
 
-Baixador was developed with substantial help from AI: most of the code, documentation and artwork was
-written by [Claude](https://www.anthropic.com/claude) (Anthropic), based on requirements set by the
-repository owner. What was and wasn't verified is listed under [Status and testing](#status-and-testing).
+O Baixador foi desenvolvido com grande ajuda de IA: a maior parte do código, da documentação e da arte
+foi escrita pelo [Claude](https://www.anthropic.com/claude) (Anthropic), a partir dos requisitos
+definidos pelo dono do repositório. O que foi ou não verificado está em
+[Testes e situação atual](#testes-e-situação-atual).
 
-## Please use it responsibly
+## Use com responsabilidade
 
-Baixador is a front end for yt-dlp. Only download content you have the right to download, and respect
-copyright and the terms of the sites you use.
+O Baixador é uma interface para o yt-dlp. Baixe apenas o que você tem direito de baixar e respeite os
+direitos autorais e os termos dos sites que usar.
 
-## License
+## Licença
 
-[MIT](LICENSE). It's short, permissive and the most common choice for small desktop tools. Anyone can
-use, change and share the code, as long as the copyright notice stays.
+[MIT](LICENSE). É curta, permissiva e muito usada em ferramentas pequenas como esta. Qualquer pessoa pode
+usar, modificar e compartilhar o código, desde que mantenha o aviso de copyright. O texto da licença está
+em inglês porque essa é a versão padrão.
 
-## Credits
+## Créditos
 
-- [yt-dlp](https://github.com/yt-dlp/yt-dlp) (Unlicense) and [FFmpeg](https://ffmpeg.org/)
-  (LGPL/GPL). They do the real work, and their programs (`yt-dlp.exe`, `ffmpeg.exe`, `ffprobe.exe`) are
-  **not** redistributed with this app. (Electron includes its own `ffmpeg.dll`, Chromium's LGPL media
-  library. Baixador doesn't use it, and it's covered by Electron's notices.)
-- Shipped inside the app: [Electron](https://www.electronjs.org/) (MIT, includes Chromium; its notices
-  are in `LICENSES.chromium.html` next to `Baixador.exe`), [React](https://react.dev/) (MIT),
-  [Lucide](https://lucide.dev/) icons (ISC), and the [Inter](https://rsms.me/inter/) typeface (SIL Open Font
-  License 1.1). Full license texts: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
-- Build tools: Vite, Tailwind CSS, TypeScript, esbuild, electron-builder.
-- The video in the screenshots and banner is *Big Buck Bunny*, © 2008 Blender Foundation |
-  [peach.blender.org](https://peach.blender.org/), licensed
-  [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/).
+- [yt-dlp](https://github.com/yt-dlp/yt-dlp) (Unlicense) e [FFmpeg](https://ffmpeg.org/) (LGPL/GPL).
+  São eles que fazem o trabalho principal, e seus programas (`yt-dlp.exe`, `ffmpeg.exe` e `ffprobe.exe`)
+  **não** são redistribuídos com este app. (O Electron inclui o próprio `ffmpeg.dll`, a biblioteca de
+  mídia LGPL do Chromium. O Baixador não a usa, e ela está coberta pelos avisos do Electron.)
+- Incluídos no app: [Electron](https://www.electronjs.org/) (MIT, com o Chromium; os avisos ficam em
+  `LICENSES.chromium.html`, ao lado do `Baixador.exe`), [React](https://react.dev/) (MIT), ícones
+  [Lucide](https://lucide.dev/) (ISC) e a fonte [Inter](https://rsms.me/inter/) (SIL Open Font License 1.1).
+  Os textos completos estão em [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+- Ferramentas de compilação: Vite, Tailwind CSS, TypeScript, esbuild e electron-builder.
+- O vídeo das capturas e do banner é *Big Buck Bunny*, © 2008 Blender Foundation |
+  [peach.blender.org](https://peach.blender.org/), sob a licença
+  [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/deed.pt-br).
