@@ -172,6 +172,22 @@ async function main() {
     const r = await convert('longo.mp4', { ...presetSettings('480p30') }, gpu ? 'gpu' : 'cpu', 'progresso');
     record('progresso e tempo restante reais', r.maxProgress >= 99 && r.sawEta, `máx ${r.maxProgress}% · eta ${r.sawEta}`);
   }
+  if (run('nova tentativa acima do limite')) {
+    // Forced case: ask the encoder for about twice the bitrate that fits, so the first attempt overshoots.
+    const input = path.join(media, 'alta-resolucao-4k.mp4');
+    const probe = await probeFile(settings, input);
+    const plan = buildPlan(probe, { ...presetSettings('discord'), rate: 'size', targetBytes: 25 * MB }, 'cpu', false, hw);
+    const asked = plan.videoKbps!;
+    const inflated = { ...plan, videoKbps: asked * 2 };
+    const attempts: number[] = [];
+    const c: Converter = new Converter(() => settings, (st) => { if (st.attempt && !attempts.includes(st.attempt)) attempts.push(st.attempt); });
+    fs.mkdirSync(outDir, { recursive: true });
+    const output = freeOutputPath(outDir, input, 'retry', 'mp4');
+    c.state = { status: 'running', progress: 0, startedAt: Date.now(), inputSize: probe.size, targetBytes: 25 * MB };
+    await (c as any).execute(probe, inflated, output);
+    const ok = c.state.status === 'done' && attempts.includes(2) && !c.state.overLimit && fs.statSync(output).size <= 25 * MB && !leftovers().length;
+    record('nova tentativa acima do limite (forçada)', ok, `pedido ${asked * 2} kbps (cabem ~${asked}) · tentativas ${attempts.join(',')} · final ${mb(c.state.outputSize)} de ${mb(25 * MB)}`);
+  }
   if (run('estimativa')) {
     const c = new Converter(() => settings, () => {});
     const est = await c.estimate(path.join(media, 'longo.mp4'), presetSettings('balanced'), 'cpu', false);

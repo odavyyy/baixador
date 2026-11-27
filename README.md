@@ -66,6 +66,8 @@ nada passa por um servidor nosso. (Veja [O que acessa a internet](#o-que-acessa-
 
 ## Conversor
 
+![Tela do conversor com um vídeo 4K e os presets](docs/screenshots/conversor.png)
+
 Abra **Conversor**, arraste um vídeo, escolha um preset e clique em **Converter**. O arquivo original nunca é
 alterado; a saída recebe o nome `vídeo (Preset).mp4`, sem sobrescrever nada.
 
@@ -301,12 +303,12 @@ arquivos JSON em `%APPDATA%\Baixador`. As capas ficam na pasta `thumbs`, e os lo
 
 Versão 1.2.0, testada no Windows 11 Pro x64, com yt-dlp 2026.10.26, FFmpeg de novembro de 2026 e uma RTX 5060 Ti.
 
-**Conversor** (54 de 54 testes com o FFmpeg real, saídas conferidas com o ffprobe): os presets, CPU e NVENC
+**Conversor** (55 de 55 testes com o FFmpeg real, saídas conferidas com o ffprobe): os presets, CPU e NVENC
 (H.264, H.265 e AV1), limites de tamanho, vídeo curto, longo, 4K, sem áudio, vertical, HDR, nomes com
 caracteres especiais, arquivos inválidos e corrompidos, cancelamento, falha real da GPU com nova tentativa na
 CPU, e o original sempre intacto. No app empacotado: seletor, arrastar e soltar, conversão, cancelamento,
-limite impossível e modo personalizado. A **nova tentativa por tamanho acima do limite** não chegou a ser
-acionada: todos os resultados ficaram dentro do alvo na primeira vez.
+limite impossível e modo personalizado. A **nova tentativa por tamanho acima do limite** não foi acionada em
+uso normal; foi testada forçando um bitrate alto demais.
 
 **Atualizador**:
 - Versão portátil, real do início ao fim: um build 0.9.0 baixou a v1.0.0 do GitHub, conferiu o SHA-256,

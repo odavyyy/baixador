@@ -47,7 +47,7 @@ async function cacheThumb(id: string, url?: string): Promise<string | undefined>
   if (!url) return undefined;
   try {
     const res = await net.fetch(url);
-    if (!res.ok) return url;
+    if (!res.ok) return undefined;
     const buf = Buffer.from(await res.arrayBuffer());
     fs.mkdirSync(thumbsDir(), { recursive: true });
     const ext = /webp/.test(res.headers.get('content-type') || '') ? 'webp' : /png/.test(res.headers.get('content-type') || '') ? 'png' : 'jpg';
@@ -55,7 +55,7 @@ async function cacheThumb(id: string, url?: string): Promise<string | undefined>
     return `thumb://local/${id}.${ext}`;
   } catch (e: any) {
     logger.warn('thumb', `Capa não salva: ${e.message}`);
-    return url;
+    return undefined;
   }
 }
 

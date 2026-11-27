@@ -36,7 +36,7 @@ Configurações.
 | Ação sua | Quem recebe a conexão |
 |---|---|
 | Analisar um link ou baixar | O site do link, por meio do **yt-dlp** instalado no seu computador |
-| Ver a prévia, a lista de uma playlist ou a lista de downloads | O servidor de imagens do site, para carregar as capas |
+| Analisar um link ou uma playlist, ou baixar | O servidor de imagens do site, para carregar e salvar as capas. Depois de fechar o app, a lista de downloads e o histórico usam só as cópias salvas |
 | **Verificar atualizações** ou baixar uma atualização (botões em Configurações) | **GitHub** (`api.github.com`, `github.com` e `*.githubusercontent.com`) |
 | **Atualizar yt-dlp** (Diagnóstico) | Os servidores usados pelo comando `yt-dlp -U` |
 | Abrir um link do projeto | Seu navegador |

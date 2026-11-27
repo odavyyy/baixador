@@ -5,6 +5,10 @@ import { api, useStore } from '../lib/store';
 import { Badge, Button, Card, Empty, IconButton, PageHeader, Progress, Thumb, cx } from '../components/ui';
 import { bytes, eta, isAudioMode, modeLabel, speed } from '../lib/format';
 
+// Covers of jobs left from an earlier run are not fetched again from the site just because the list is shown:
+// finished ones use the copy cached with the history, the others show a placeholder.
+const SESSION_START = Date.now();
+
 const STATUS: Record<Job['status'], { label: string; tone: 'muted' | 'accent' | 'ok' | 'bad' | 'warn' }> = {
   queued: { label: 'Aguardando', tone: 'muted' },
   downloading: { label: 'Baixando', tone: 'accent' },
@@ -56,7 +60,9 @@ function Section({ title, right, children }: { title: string; right?: React.Reac
 }
 
 export function JobCard({ job: j }: { job: Job }) {
-  const { go } = useStore();
+  const { go, history } = useStore();
+  const cached = history.find((h) => h.id === j.id)?.thumbnail;
+  const cover = cached?.startsWith('thumb://') ? cached : j.createdAt >= SESSION_START ? j.thumbnail : undefined;
   const [showDetail, setShowDetail] = useState(false);
   const st = STATUS[j.status];
   const running = j.status === 'downloading' || j.status === 'processing';
@@ -77,7 +83,7 @@ export function JobCard({ job: j }: { job: Job }) {
   return (
     <Card className={cx('p-3.5 transition-colors', j.status === 'error' && 'border-bad/30')}>
       <div className="flex items-center gap-4">
-        <Thumb src={j.thumbnail} audio={isAudioMode(j.mode)} className="aspect-video w-[112px] shrink-0 rounded-md" />
+        <Thumb src={cover} audio={isAudioMode(j.mode)} className="aspect-video w-[112px] shrink-0 rounded-md" />
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <div className="truncate text-[14px] font-medium" title={j.title}>{j.title}</div>
