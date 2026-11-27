@@ -5,9 +5,9 @@
 # Baixador
 
 <p align="center">
-  <a href="https://github.com/odavyyy/baixador/releases/download/v1.0.0/Baixador-Setup-1.0.0.exe"><img src="docs/botoes/baixar-instalador.svg" alt="Baixar o instalador para Windows (v1.0.0)" width="330"></a>
+  <a href="https://github.com/odavyyy/baixador/releases/download/v1.1.0/Baixador-Setup-1.1.0.exe"><img src="docs/botoes/baixar-instalador.svg" alt="Baixar o instalador para Windows (v1.1.0)" width="330"></a>
   &nbsp;&nbsp;
-  <a href="https://github.com/odavyyy/baixador/releases/download/v1.0.0/Baixador-1.0.0-win-x64.zip"><img src="docs/botoes/baixar-portatil.svg" alt="Baixar a versão portátil (v1.0.0)" width="330"></a>
+  <a href="https://github.com/odavyyy/baixador/releases/download/v1.1.0/Baixador-1.1.0-win-x64.zip"><img src="docs/botoes/baixar-portatil.svg" alt="Baixar a versão portátil (v1.1.0)" width="330"></a>
 </p>
 
 <p align="center">
@@ -43,6 +43,11 @@ nada passa por um servidor nosso. (Veja [O que acessa a internet](#o-que-acessa-
   - Busca, filtro por vídeo ou áudio e capa salva no computador para cada download.
   - Remover um item não apaga o arquivo. É preciso marcar uma opção e confirmar, e mesmo assim ele vai
     para a Lixeira.
+- **Playlists e álbuns.** Cole o link da playlist, veja a lista, marque o que quiser e escolha áudio (MP3 ou
+  original) ou vídeo (MP4 ou MKV). Cada item entra na fila, com progresso e opção de tentar de novo, e pode
+  ser salvo em uma pasta com o nome da playlist. Em um link de vídeo que também faz parte de uma playlist,
+  o app oferece ver a playlist inteira. Em playlists, a qualidade de vídeo é um limite ("até 1080p"),
+  porque cada vídeo não é analisado antes.
 - **Detecção de links copiados.** Copie um link em qualquer lugar e o app oferece colar.
 - **Configurações**
   - Pasta de destino (com o seletor do Windows), qualidade, formato e bitrate padrão, nome dos arquivos,
@@ -85,8 +90,8 @@ winget install DenoLand.Deno
 
 ## Instalação
 
-1. Baixe o `Baixador-Setup-1.0.0.exe` na página de [Releases](../../releases) e execute.
-   Há também a versão portátil, `Baixador-1.0.0-win-x64.zip`: extraia em qualquer pasta e abra o
+1. Baixe o `Baixador-Setup-1.1.0.exe` na página de [Releases](../../releases) e execute.
+   Há também a versão portátil, `Baixador-1.1.0-win-x64.zip`: extraia em qualquer pasta e abra o
    `Baixador.exe`.
 2. Abra o **Baixador**. Na primeira vez, ele procura o yt-dlp e o FFmpeg (veja abaixo). Se não
    encontrar, a tela inicial avisa, e você pode indicar os caminhos em **Configurações → Programas**.
@@ -195,18 +200,21 @@ arquivos JSON em `%APPDATA%\Baixador`. As capas ficam na pasta `thumbs`, e os lo
 | Problema | O que tentar |
 |---|---|
 | "yt-dlp não foi encontrado" ou "FFmpeg não foi encontrado" | Instale (veja os Requisitos) e vá em **Configurações → Programas → Detectar**, ou escolha o `.exe`. |
-| YouTube: erro 403, formatos faltando ou o aviso amarelo "pode estar desatualizado" | Atualize o yt-dlp (**Diagnóstico → Atualizar yt-dlp**) e confira se há um runtime JavaScript instalado ([wiki EJS](https://github.com/yt-dlp/yt-dlp/wiki/EJS)). Após um erro 403, o app tenta mais uma vez usando HLS. Essa parte do código existe, mas não foi acionada nos testes. |
+| YouTube: erro 403, formatos faltando ou o aviso amarelo "pode estar desatualizado" | Atualize o yt-dlp (**Diagnóstico → Atualizar yt-dlp**) e confira se há um runtime JavaScript instalado ([wiki EJS](https://github.com/yt-dlp/yt-dlp/wiki/EJS)). Após um erro 403, o app tenta mais uma vez usando HLS. |
 | "Sign in to confirm you're not a bot" ou restrição de idade | **Configurações → Avançado → Usar cookies do navegador**, com um navegador em que você esteja logado. Navegadores baseados no Chromium costumam bloquear o banco de cookies enquanto estão abertos. O Firefox geralmente é mais fácil. |
 | O arquivo baixado tem "(720p 60fps)" no nome | Já existia um arquivo com o nome simples (por exemplo, em outra qualidade). O app não sobrescreve. |
 | O MP4 não abre | Acima de 1080p, os sites muitas vezes só oferecem VP9/AV1. Escolha 1080p ou menos para ter H.264, ou use um player como VLC ou mpv. |
-| Playlists ou transmissões ao vivo | Ainda não são suportadas. O app avisa e não inicia o download. |
+| O link abre só um vídeo, e não a playlist | Clique em **Ver playlist inteira**, que aparece quando o link também traz a playlist. Mixes automáticos do YouTube não são suportados, porque não têm fim. |
+| Transmissões ao vivo | Ainda não são suportadas. O app avisa e não inicia o download. |
 | Outro problema | A tela **Diagnóstico** mostra a saída completa do yt-dlp, que você pode exportar ao abrir uma issue. |
 
 ## Testes e situação atual
 
-Versão 1.0.0. Testado no Windows 11 Pro x64, com o yt-dlp 2026.10.26 e uma versão do FFmpeg de novembro de 2026:
+Versão 1.1.0. Testado no Windows 11 Pro x64, com o yt-dlp 2026.10.26 e uma versão do FFmpeg de novembro de 2026:
 
 - Análise de links e lista de formatos no YouTube.
+- Um álbum do YouTube Music com 14 faixas, baixado inteiro em MP3 (VBR máxima), com dois downloads por vez,
+  inclusive títulos com acento. Em uma das faixas houve erro 403, e a nova tentativa via HLS funcionou.
 - MP4 (240p, 720p60 e 1080p60), MKV (240p AV1 e 1440p60), MP3 (128, 192 e 320 kbps com capa) e M4A original.
 - Dois downloads simultâneos com um na fila; pausar e continuar, cancelar com limpeza e tentar de novo.
 - Mensagem de erro clara para um link que não é de vídeo, e remoção de um item do histórico sem apagar o arquivo.
@@ -215,7 +223,7 @@ Versão 1.0.0. Testado no Windows 11 Pro x64, com o yt-dlp 2026.10.26 e uma vers
   `npm run dev`, `npm run build` e `npm run dist`.
 
 Ainda não testado: outros sites (Instagram, TikTok etc.), Windows 10, o instalador e o desinstalador,
-a opção de cookies do navegador, a alternativa HLS após um erro 403, a detecção de links copiados, as
+a opção de cookies do navegador, a detecção de links copiados, as
 notificações do Windows, o botão **Atualizar yt-dlp**, apagar um arquivo para a Lixeira pelo Histórico,
 padrões de nome diferentes de "Título", abrir a pasta ao concluir e a exportação do log.
 

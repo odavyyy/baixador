@@ -19,6 +19,7 @@ const api: Api = {
   analyze: inv('analyze'),
   cancelAnalyze: inv('analyze:cancel'),
   enqueue: inv('jobs:enqueue'),
+  enqueueMany: inv('jobs:enqueueMany'),
   listJobs: inv('jobs:list'),
   pause: inv('jobs:pause'),
   resume: inv('jobs:resume'),

@@ -64,8 +64,28 @@ export interface MediaInfo {
   bestAudioSize?: number; // size of the audio track merged into MP4
   bestAudioSizeAny?: number;
   formatCount: number;
+  /** set when a single-video link also points to a playlist (…watch?v=X&list=Y) */
+  playlistUrl?: string;
   /** set when yt-dlp warns that its YouTube challenge solver failed (usually: yt-dlp outdated) */
   outdatedWarning?: boolean;
+}
+
+export interface PlaylistEntry {
+  id: string;
+  url: string;
+  title: string;
+  uploader?: string;
+  duration?: number;
+  thumbnail?: string;
+}
+
+export interface PlaylistInfo {
+  url: string;
+  title: string;
+  uploader?: string;
+  entries: PlaylistEntry[];
+  /** private / deleted items that were left out */
+  skipped: number;
 }
 
 export type JobStatus = 'queued' | 'downloading' | 'processing' | 'paused' | 'completed' | 'error' | 'canceled';
@@ -83,6 +103,11 @@ export interface DownloadRequest {
   expectedSize?: number;
   outputDir?: string;
   height?: number;
+  /** yt-dlp -S expression */
+  formatSort?: string;
+  /** items queued together (a playlist) are announced once, when all of them end */
+  batchId?: string;
+  batchTitle?: string;
 }
 
 export interface Job extends DownloadRequest {
@@ -129,7 +154,10 @@ export interface ToolStatus {
   ffmpeg: { ok: boolean; path: string; version?: string; error?: string };
 }
 
-export type AnalyzeResult = { ok: true; info: MediaInfo } | { ok: false; error: string; detail?: string };
+export type AnalyzeResult =
+  | { ok: true; info: MediaInfo; playlist?: undefined }
+  | { ok: true; playlist: PlaylistInfo; info?: undefined }
+  | { ok: false; error: string; detail?: string };
 
 export interface Api {
   getSettings(): Promise<Settings>;
@@ -144,6 +172,7 @@ export interface Api {
   cancelAnalyze(): Promise<void>;
 
   enqueue(req: DownloadRequest): Promise<Job>;
+  enqueueMany(reqs: DownloadRequest[]): Promise<number>;
   listJobs(): Promise<Job[]>;
   pause(id: string): Promise<void>;
   resume(id: string): Promise<void>;

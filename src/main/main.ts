@@ -117,6 +117,7 @@ function registerIpc() {
   h('analyze:cancel', () => cancelAnalyze());
 
   h('jobs:enqueue', (_e, req) => manager.enqueue(req));
+  h('jobs:enqueueMany', (_e, reqs) => manager.enqueueMany(reqs));
   h('jobs:list', () => manager.list());
   h('jobs:pause', (_e, id: string) => manager.pause(id));
   h('jobs:resume', (_e, id: string) => manager.resume(id));
@@ -195,6 +196,16 @@ app.whenReady().then(() => {
     settings: () => settings.value,
     onChange: (jobs) => send('jobs:update', jobs),
     onFinished: (job) => {
+      if (job.batchId) {
+        // One notification (and one folder window) for the whole playlist.
+        const batch = manager.list().filter((j) => j.batchId === job.batchId);
+        if (batch.some((j) => ['queued', 'downloading', 'processing', 'paused'].includes(j.status))) return;
+        const done = batch.filter((j) => j.status === 'completed');
+        notify('Playlist finalizada', `${job.batchTitle}\n${done.length} de ${batch.length} concluídos`, () => send('navigate', 'downloads'));
+        const file = done[0]?.filePath;
+        if (settings.value.openFolderAfter && file) shell.showItemInFolder(file);
+        return;
+      }
       if (job.status === 'completed') {
         notify('Download concluído', job.title, () => job.filePath && shell.showItemInFolder(job.filePath));
         if (settings.value.openFolderAfter && job.filePath) shell.showItemInFolder(job.filePath);

@@ -4,6 +4,7 @@ import type { DownloadMode, DownloadRequest, MediaInfo, Settings, VideoOption } 
 import { api, useStore } from '../lib/store';
 import { Badge, Button, Card, Segmented, Thumb, cx } from '../components/ui';
 import { bytes, duration, isUrl } from '../lib/format';
+import { PlaylistResult } from './Playlist';
 
 type Kind = 'video' | 'audio';
 type Container = 'mp4' | 'mkv';
@@ -110,6 +111,7 @@ export function HomePage() {
           </Card>
         )}
         {home.phase === 'ready' && home.info && settings && <Result key={home.info.url} info={home.info} settings={settings} />}
+        {home.phase === 'ready' && home.playlist && settings && <PlaylistResult key={home.playlist.url} playlist={home.playlist} settings={settings} />}
       </div>
     </div>
   );
@@ -143,7 +145,7 @@ function pickDefault(opts: VideoOption[], q: Settings['defaultVideoQuality']): s
 const fpsLabel = (o: VideoOption) => (o.fps && o.fps > 30 ? `${o.fps} FPS` : o.fps ? `${o.fps} FPS` : '');
 
 function Result({ info, settings }: { info: MediaInfo; settings: Settings }) {
-  const { toast, go } = useStore();
+  const { toast, go, analyzeUrl } = useStore();
   const hasVideo = info.videoOptions.length > 0;
   const hasAudio = info.audioOptions.length > 0 || info.videoOptions.some((o) => o.bestHasAudio);
   const [kind, setKind] = useState<Kind>(hasVideo ? settings.defaultMode : 'audio');
@@ -223,6 +225,13 @@ function Result({ info, settings }: { info: MediaInfo; settings: Settings }) {
           </div>
         </div>
       </Card>
+
+      {info.playlistUrl && (
+        <div className="flex items-center gap-3 rounded-xl border border-accent/30 bg-accent/10 px-4 py-2.5 text-[13px]">
+          <span className="flex-1 text-muted">Este link também faz parte de uma playlist. Abaixo está só este vídeo.</span>
+          <Button size="sm" variant="primary" onClick={() => analyzeUrl(info.playlistUrl!)}>Ver playlist inteira</Button>
+        </div>
+      )}
 
       {info.outdatedWarning && (
         <div className="flex items-center gap-3 rounded-xl border border-warn/30 bg-warn/10 px-4 py-2.5 text-[13px]">

@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import type { Api, HistoryItem, Job, MediaInfo, Settings, ToolStatus } from '@shared/types';
+import type { Api, HistoryItem, Job, MediaInfo, PlaylistInfo, Settings, ToolStatus } from '@shared/types';
 
 declare global { interface Window { api: Api } }
 export const api = window.api;
@@ -19,6 +19,7 @@ export interface HomeState {
   url: string;
   phase: 'idle' | 'analyzing' | 'ready' | 'error';
   info?: MediaInfo;
+  playlist?: PlaylistInfo;
   error?: string;
   errorDetail?: string;
 }
@@ -54,6 +55,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [tools, setTools] = useState<ToolStatus | null>(null);
   const prevStatus = useRef(new Map<string, string>());
   const tid = useRef(1);
+  const announced = useRef(new Set<string>());
 
   const dismiss = useCallback((id: number) => setToasts((t) => t.filter((x) => x.id !== id)), []);
   const toast = useCallback((t: Omit<Toast, 'id'>) => {
@@ -84,7 +86,15 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     for (const j of jobs) {
       const before = prevStatus.current.get(j.id);
-      if (before && before !== j.status) {
+      if (before && before !== j.status && j.batchId) {
+        const batch = jobs.filter((x) => x.batchId === j.batchId);
+        const ended = ['completed', 'error'].includes(j.status) && batch.every((x) => ['completed', 'error', 'canceled'].includes(x.status));
+        if (ended && !announced.current.has(j.batchId)) {
+          announced.current.add(j.batchId);
+          const ok = batch.filter((x) => x.status === 'completed').length;
+          toast({ kind: ok === batch.length ? 'ok' : 'error', title: 'Playlist finalizada', msg: `${j.batchTitle} · ${ok} de ${batch.length} concluídos`, action: { label: 'Ver downloads', run: () => setPage('downloads') } });
+        }
+      } else if (before && before !== j.status) {
         if (j.status === 'completed') {
           toast({ kind: 'ok', title: 'Download concluído', msg: j.title, action: j.filePath ? { label: 'Abrir pasta', run: () => api.showInFolder(j.filePath!) } : undefined });
         } else if (j.status === 'error') {
@@ -117,7 +127,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     const r = await api.analyze(url);
     setHome((h) => {
       if (h.url !== url || h.phase !== 'analyzing') return h; // user moved on
-      return r.ok ? { url, phase: 'ready', info: r.info } : { url, phase: r.error === 'Análise cancelada.' ? 'idle' : 'error', error: r.error, errorDetail: r.detail };
+      return r.ok ? { url, phase: 'ready', info: r.info, playlist: r.playlist } : { url, phase: r.error === 'Análise cancelada.' ? 'idle' : 'error', error: r.error, errorDetail: r.detail };
     });
   }, []);
 

@@ -2,14 +2,15 @@
 import { spawn, execFile, execFileSync, type ChildProcess } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-import type { AnalyzeResult, AudioOption, MediaInfo, Settings, ToolStatus, VideoOption } from '../shared/types';
+import type { AnalyzeResult, AudioOption, MediaInfo, PlaylistInfo, Settings, ToolStatus, VideoOption } from '../shared/types';
 import { logger } from './logger';
 
 export const childEnv = () => ({ ...process.env, PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1' });
 
 /** Arguments every yt-dlp call gets. */
 export function baseArgs(s: Settings): string[] {
-  const args = ['--ffmpeg-location', path.dirname(s.ffmpegPath)];
+  // yt-dlp.exe ignores PYTHONIOENCODING; without --encoding, accented file names arrive garbled.
+  const args = ['--encoding', 'utf-8', '--ffmpeg-location', path.dirname(s.ffmpegPath)];
   if (s.cookiesFromBrowser !== 'none') args.push('--cookies-from-browser', s.cookiesFromBrowser);
   return args;
 }
@@ -116,11 +117,14 @@ export function analyze(s: Settings, url: string): Promise<AnalyzeResult> {
       try {
         const j = JSON.parse(Buffer.concat(out).toString('utf8'));
         if (j._type === 'playlist') {
-          const n = j.entries?.length ?? j.playlist_count;
-          return resolve({ ok: false, error: `Este link é uma playlist${n ? ` com ${n} vídeos` : ''}. Cole o link de um vídeo específico.` });
+          const playlist = parsePlaylist(j, url);
+          if (!playlist.entries.length) return resolve({ ok: false, error: 'Não encontrei itens disponíveis nesta playlist. Para canais, abra uma playlist específica ou a aba de vídeos.' });
+          logger.info('analyze', `OK em ${Date.now() - t0} ms: playlist "${playlist.title}" · ${playlist.entries.length} itens (${playlist.skipped} ignorados)`);
+          return resolve({ ok: true, playlist });
         }
         if (j.is_live) return resolve({ ok: false, error: 'Transmissões ao vivo não podem ser baixadas aqui. Tente depois que a live terminar.' });
         const info = parseInfo(j, url);
+        info.playlistUrl = playlistUrlOf(url);
         if (/challenge solving failed|Error solving n challenge/i.test(err)) info.outdatedWarning = true;
         logger.info('analyze', `OK em ${Date.now() - t0} ms: "${info.title}" · ${info.formatCount} formatos · ${info.videoOptions.length} resoluções · ${info.audioOptions.length} áudios`);
         resolve({ ok: true, info });
@@ -130,6 +134,39 @@ export function analyze(s: Settings, url: string): Promise<AnalyzeResult> {
       }
     });
   });
+}
+
+/** For a YouTube video link that also carries a real playlist id (mixes "RD…" are endless, so they don't count). */
+export function playlistUrlOf(url: string): string | undefined {
+  try {
+    const u = new URL(url);
+    const list = u.searchParams.get('list');
+    if (!list || /^(RD|UL|LL|WL)/.test(list) || !/(^|\.)(youtube\.com|youtu\.be)$/.test(u.hostname)) return undefined;
+    return `https://www.youtube.com/playlist?list=${encodeURIComponent(list)}`;
+  } catch {
+    return undefined;
+  }
+}
+
+export function parsePlaylist(j: any, url: string): PlaylistInfo {
+  const all: any[] = (j.entries ?? []).filter(Boolean);
+  const entries = all
+    .filter((e) => e._type !== 'playlist' && /^https?:/.test(e.url || e.webpage_url || '') && !/^\[(private|deleted) video\]$/i.test(e.title || ''))
+    .map((e, i) => ({
+      id: String(e.id ?? i),
+      url: String(e.url || e.webpage_url),
+      title: e.title || `Item ${i + 1}`,
+      uploader: e.uploader || e.channel || undefined,
+      duration: e.duration ?? undefined,
+      thumbnail: e.thumbnail ?? e.thumbnails?.[e.thumbnails.length - 1]?.url,
+    }));
+  return {
+    url: j.webpage_url || url,
+    title: j.title || 'Playlist',
+    uploader: j.uploader || j.channel || undefined,
+    entries,
+    skipped: all.length - entries.length,
+  };
 }
 
 const codecName = (vc?: string) => {

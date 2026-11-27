@@ -84,6 +84,22 @@ export class DownloadManager {
   }
 
   enqueue(req: DownloadRequest): Job {
+    const job = this.add(req);
+    this.changed(true);
+    this.schedule();
+    return job;
+  }
+
+  /** Adds a whole batch before starting anything, so the batch can't look finished halfway through. */
+  enqueueMany(reqs: DownloadRequest[]): number {
+    // add() puts jobs at the top and schedule() takes from the bottom, so the first item still starts first.
+    for (const r of reqs) this.add(r);
+    this.changed(true);
+    this.schedule();
+    return reqs.length;
+  }
+
+  private add(req: DownloadRequest): Job {
     const s = this.hooks.settings();
     const job: Job = {
       ...req,
@@ -96,8 +112,6 @@ export class DownloadManager {
     };
     this.jobs.unshift(job);
     logger.info('queue', `Adicionado: "${job.title}" (${job.mode}, ${job.qualityLabel})`);
-    this.changed(true);
-    this.schedule();
     return job;
   }
 
@@ -139,6 +153,7 @@ export class DownloadManager {
       '--print', 'after_move:[[FILE]]%(filepath)s',
       '--no-quiet', '--progress',
     ];
+    if (job.formatSort && !job.usedFallback) args.push('-S', job.formatSort);
     switch (job.mode) {
       case 'video':
         args.push('--merge-output-format', 'mp4', '--remux-video', 'mp4');
@@ -147,7 +162,8 @@ export class DownloadManager {
         args.push('--merge-output-format', 'mkv');
         break;
       case 'mp3':
-        args.push('-x', '--audio-format', 'mp3', '--audio-quality', `${job.bitrate ?? s.defaultBitrate}K`);
+        // 0 means yt-dlp's best variable bitrate (--audio-quality 0)
+        args.push('-x', '--audio-format', 'mp3', '--audio-quality', job.bitrate === 0 ? '0' : `${job.bitrate ?? s.defaultBitrate}K`);
         if (s.embedMetadata) args.push('--embed-thumbnail', '--convert-thumbnails', 'jpg');
         break;
       case 'audio':
