@@ -1,0 +1,21 @@
+# dependencies
+node_modules/
+
+# build output
+dist/
+release/
+
+# logs and local test data
+*.log
+logs/
+
+# OS / editor
+Thumbs.db
+desktop.ini
+.DS_Store
+.vscode/
+.idea/
+
+# never commit secrets
+.env
+.env.*

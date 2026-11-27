@@ -1,0 +1,46 @@
+<!doctype html>
+<!-- Source of docs/banner.png (1280x640, GitHub social preview size). Rendered by scripts/render-art.cjs -->
+<html>
+<head>
+<meta charset="utf-8" />
+<style>
+  @font-face { font-family: Inter; src: url('../../node_modules/@fontsource-variable/inter/files/inter-latin-wght-normal.woff2') format('woff2'); font-weight: 100 900; }
+  html, body { margin: 0; width: 1280px; height: 640px; overflow: hidden; }
+  body {
+    font-family: Inter, 'Segoe UI', sans-serif; color: #ebecf0;
+    background:
+      radial-gradient(700px 420px at 12% 18%, rgba(122,108,255,.28), transparent 70%),
+      radial-gradient(520px 380px at 95% 100%, rgba(180,92,255,.18), transparent 70%),
+      #0c0d10;
+    position: relative;
+  }
+  .left { position: absolute; left: 88px; top: 0; bottom: 0; width: 520px; display: flex; flex-direction: column; justify-content: center; }
+  .icon { width: 84px; height: 84px; filter: drop-shadow(0 14px 30px rgba(122,108,255,.55)); }
+  h1 { font-size: 76px; font-weight: 700; letter-spacing: -2.5px; margin: 28px 0 10px; }
+  p { font-size: 25px; line-height: 1.4; color: #9a9eaa; margin: 0; max-width: 470px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 34px; }
+  .chip { font-size: 16px; font-weight: 500; padding: 8px 14px; border-radius: 9px; background: #1f2128; border: 1px solid #2a2d36; color: #c9ccd3; }
+  .chip.accent { background: rgba(122,108,255,.16); border-color: rgba(122,108,255,.35); color: #b3a9ff; }
+  .shot {
+    position: absolute; left: 650px; top: 92px; width: 860px; border-radius: 14px;
+    border: 1px solid #2a2d36; box-shadow: 0 40px 90px rgba(0,0,0,.65), 0 0 0 1px rgba(255,255,255,.03);
+  }
+</style>
+</head>
+<body>
+  <div class="left">
+    <svg class="icon" viewBox="0 0 512 512">
+      <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7a6cff"/><stop offset="1" stop-color="#b45cff"/></linearGradient></defs>
+      <rect x="16" y="16" width="480" height="480" rx="112" fill="url(#g)"/>
+      <g fill="none" stroke="#fff" stroke-width="44" stroke-linecap="round" stroke-linejoin="round"><path d="M256 112v208"/><path d="M164 236l92 92 92-92"/><path d="M136 400h240"/></g>
+    </svg>
+    <h1>Baixador</h1>
+    <p>A simple Windows app for downloading video and audio with yt-dlp and FFmpeg.</p>
+    <div class="chips">
+      <span class="chip accent">Runs locally</span>
+      <span class="chip">MP4</span><span class="chip">MKV</span><span class="chip">MP3</span><span class="chip">Original audio</span>
+    </div>
+  </div>
+  <img class="shot" src="../screenshots/downloads.png" />
+</body>
+</html>

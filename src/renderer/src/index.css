@@ -1,0 +1,43 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root, .dark {
+  --bg: 12 13 16; --panel: 16 17 21; --card: 22 23 28; --elev: 31 33 40; --line: 40 43 52;
+  --fg: 235 236 240; --muted: 150 155 168; --faint: 96 100 112;
+  --accent: 122 108 255; --ok: 56 200 122; --warn: 240 176 64; --bad: 238 84 84;
+  color-scheme: dark;
+}
+.light {
+  --bg: 243 244 247; --panel: 250 250 252; --card: 255 255 255; --elev: 236 238 242; --line: 224 226 232;
+  --fg: 22 24 30; --muted: 92 97 110; --faint: 148 152 164;
+  --accent: 98 82 245; --ok: 26 160 92; --warn: 200 130 20; --bad: 214 60 60;
+  color-scheme: light;
+}
+
+html, body, #root { height: 100%; }
+body {
+  @apply bg-bg text-fg font-sans antialiased select-none;
+  font-size: 14px;
+  font-feature-settings: 'cv11', 'ss01';
+}
+input, textarea, .selectable { @apply select-text; }
+.drag { -webkit-app-region: drag; }
+.no-drag { -webkit-app-region: no-drag; }
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: rgb(var(--line)); border-radius: 8px; border: 3px solid transparent; background-clip: padding-box; }
+::-webkit-scrollbar-thumb:hover { background-color: rgb(var(--faint)); }
+::-webkit-scrollbar-track { background: transparent; }
+
+.skeleton {
+  background: linear-gradient(90deg, rgb(var(--elev)) 0px, rgb(var(--line)) 120px, rgb(var(--elev)) 240px);
+  background-size: 800px 100%;
+  @apply animate-shimmer;
+}
+.stripes {
+  background-image: linear-gradient(45deg, rgb(255 255 255 / .18) 25%, transparent 25%, transparent 50%, rgb(255 255 255 / .18) 50%, rgb(255 255 255 / .18) 75%, transparent 75%);
+  background-size: 24px 24px;
+  @apply animate-stripes;
+}
+.focus-ring { @apply outline-none focus-visible:ring-2 focus-visible:ring-accent/60 focus-visible:ring-offset-0; }
