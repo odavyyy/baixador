@@ -4,6 +4,17 @@
 
 # Baixador
 
+<p align="center">
+  <a href="https://github.com/odavyyy/baixador/releases/download/v1.0.0/Baixador-Setup-1.0.0.exe"><img src="docs/botoes/baixar-instalador.svg" alt="Baixar o instalador para Windows (v1.0.0)" width="330"></a>
+  &nbsp;&nbsp;
+  <a href="https://github.com/odavyyy/baixador/releases/download/v1.0.0/Baixador-1.0.0-win-x64.zip"><img src="docs/botoes/baixar-portatil.svg" alt="Baixar a versão portátil (v1.0.0)" width="330"></a>
+</p>
+
+<p align="center">
+  Windows 10 ou 11 (testado no 11) · precisa do <a href="#requisitos">yt-dlp e do FFmpeg</a> · sem assinatura digital (<a href="#instalação">veja como instalar</a>) ·
+  <a href="../../releases/latest">todas as versões</a>
+</p>
+
 O Baixador é um app para Windows que baixa vídeo e áudio com o
 [yt-dlp](https://github.com/yt-dlp/yt-dlp) e o [FFmpeg](https://ffmpeg.org/). Você cola um link, vê as
 qualidades que existem de verdade, escolhe uma e baixa, sem digitar nenhum comando.
