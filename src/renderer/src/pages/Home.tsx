@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { AlertCircle, ArrowRight, Clipboard, Clock, Download, Film, FolderOpen, Link2, Loader2, Music, Sparkles, User, X } from 'lucide-react';
+import { AlertCircle, ArrowRight, Clipboard, Clock, Download, Film, Layers, Link2, Loader2, Music, Sparkles, User, X } from 'lucide-react';
 import type { DownloadMode, DownloadRequest, MediaInfo, Settings, VideoOption } from '@shared/types';
 import { api, useStore } from '../lib/store';
 import { Badge, Button, Card, Segmented, Thumb, cx } from '../components/ui';
 import { bytes, duration, isUrl } from '../lib/format';
 import { PlaylistResult } from './Playlist';
+import { extractUrls } from '@shared/links';
+import { BatchInput, FailedLinks } from '../components/BatchInput';
+import { FolderPicker } from '../components/FolderPicker';
 
 type Kind = 'video' | 'audio';
 type Container = 'mp4' | 'mkv';
@@ -28,9 +31,21 @@ export function HomePage() {
     setClip(null);
     void analyzeUrl(u);
   };
+  /** Two or more links pasted at once open the "several links" box instead. */
+  const asList = (t: string) => {
+    if (extractUrls(t).urls.length < 2) return false;
+    void api.cancelAnalyze();
+    setClip(null);
+    setHome({ url: '', phase: 'idle', batchMode: true, batchText: t });
+    return true;
+  };
+  const toggleBatch = () => {
+    void api.cancelAnalyze();
+    setHome(home.batchMode ? { url: '', phase: 'idle' } : { url: '', phase: 'idle', batchMode: true, batchText: isUrl(home.url) ? `${home.url}\n` : '' });
+  };
   const pasteAndGo = async () => {
     const t = (await api.readClipboard()).trim();
-    if (!t) return;
+    if (!t || asList(t)) return;
     setHome((h) => ({ ...h, url: t }));
     if (isUrl(t)) submit(t);
   };
@@ -54,6 +69,7 @@ export function HomePage() {
           </div>
         )}
 
+        {home.batchMode ? <BatchInput /> : (
         <form onSubmit={(e) => { e.preventDefault(); submit(); }} className="mx-auto max-w-[820px]">
           <div className="group flex items-center gap-2 rounded-2xl border border-line bg-card p-2 pl-4 shadow-[0_10px_40px_-20px_rgba(0,0,0,.6)] transition-colors focus-within:border-accent/60">
             <Link2 size={18} className="shrink-0 text-faint group-focus-within:text-accent" />
@@ -63,6 +79,7 @@ export function HomePage() {
               onChange={(e) => setHome((h) => ({ ...h, url: e.target.value, phase: h.phase === 'error' ? 'idle' : h.phase }))}
               onPaste={(e) => {
                 const t = e.clipboardData.getData('text').trim();
+                if (asList(t)) { e.preventDefault(); return; }
                 if (isUrl(t)) { e.preventDefault(); setHome((h) => ({ ...h, url: t })); submit(t); }
               }}
               placeholder="https://www.youtube.com/watch?v=…"
@@ -84,8 +101,14 @@ export function HomePage() {
             )}
           </div>
         </form>
+        )}
+        <div className="mx-auto mt-2 flex max-w-[820px] justify-end">
+          <Button size="sm" variant="ghost" onClick={toggleBatch} icon={home.batchMode ? <Link2 size={14} /> : <Layers size={14} />}>
+            {home.batchMode ? 'Voltar para um link só' : 'Baixar vários links de uma vez'}
+          </Button>
+        </div>
 
-        {clip && !analyzing && (
+        {clip && !analyzing && !home.batchMode && (
           <div className="mx-auto mt-3 flex max-w-[820px] items-center gap-3 rounded-xl border border-accent/30 bg-accent/10 px-4 py-2.5 animate-in">
             <Clipboard size={16} className="shrink-0 text-accent" />
             <div className="min-w-0 flex-1 text-[13px]">
@@ -99,7 +122,13 @@ export function HomePage() {
       </div>
 
       <div className="mx-auto mt-6 max-w-[820px]">
-        {analyzing && <AnalyzingSkeleton />}
+        {analyzing && !home.batchMode && <AnalyzingSkeleton />}
+        {analyzing && home.batchMode && home.batchProgress && (
+          <Card className="p-5 text-[13.5px] text-muted animate-in">
+            <Loader2 size={15} className="mr-2 inline animate-spin" />Verificando os links: {home.batchProgress.done} de {home.batchProgress.total}…
+          </Card>
+        )}
+        {home.phase === 'error' && home.failed?.length ? <div className="mb-3"><FailedLinks items={home.failed} /></div> : null}
         {home.phase === 'error' && home.error && (
           <Card className="flex items-start gap-3 border-bad/30 bg-bad/[.06] p-4 animate-in">
             <AlertCircle size={18} className="mt-0.5 shrink-0 text-bad" />
@@ -343,15 +372,7 @@ function Result({ info, settings }: { info: MediaInfo; settings: Settings }) {
         </div>
 
         <div className="mt-6 flex items-center gap-3 border-t border-line/60 pt-4">
-          <button
-            onClick={async () => { const p = await api.pickFolder(outDir); if (p) setOutDir(p); }}
-            className="flex min-w-0 flex-1 items-center gap-2.5 rounded-lg px-2 py-1.5 text-left text-[13px] text-muted transition-colors hover:bg-elev"
-            title="Alterar pasta de destino deste download"
-          >
-            <FolderOpen size={16} className="shrink-0" />
-            <span className="truncate">{outDir}</span>
-            <span className="shrink-0 text-[12px] text-accent">Alterar</span>
-          </button>
+          <FolderPicker value={outDir} onChange={setOutDir} />
           <div className="text-right text-[12.5px] text-muted">
             <div className="font-medium text-fg">{req.qualityLabel}{kind === 'video' ? ` · ${container.toUpperCase()}` : audioFmt === 'mp3' ? ' · MP3' : ''}</div>
             {req.expectedSize ? <div>~{bytes(req.expectedSize)}</div> : null}

@@ -91,7 +91,15 @@ export interface PlaylistInfo {
   entries: PlaylistEntry[];
   /** private / deleted items that were left out */
   skipped: number;
+  /** a list of links pasted by the user, not a real playlist */
+  isList?: boolean;
+  /** pasted links that could not be read */
+  failed?: FailedLink[];
 }
+
+export interface FailedLink { url: string; error: string }
+
+export type BatchResult = { ok: true; playlist: PlaylistInfo } | { ok: false; error: string; failed?: FailedLink[] };
 
 export type JobStatus = 'queued' | 'downloading' | 'processing' | 'paused' | 'completed' | 'error' | 'canceled';
 
@@ -113,6 +121,9 @@ export interface DownloadRequest {
   /** items queued together (a playlist) are announced once, when all of them end */
   batchId?: string;
   batchTitle?: string;
+  batchKind?: 'list';
+  /** puts the video id in the file name, for items of a batch that share a title */
+  nameWithId?: boolean;
 }
 
 export interface Job extends DownloadRequest {
@@ -201,6 +212,8 @@ export interface Api {
 
   analyze(url: string): Promise<AnalyzeResult>;
   cancelAnalyze(): Promise<void>;
+  analyzeBatch(urls: string[]): Promise<BatchResult>;
+  onBatchProgress(cb: (p: { done: number; total: number }) => void): () => void;
 
   enqueue(req: DownloadRequest): Promise<Job>;
   enqueueMany(reqs: DownloadRequest[]): Promise<number>;

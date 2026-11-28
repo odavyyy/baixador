@@ -45,7 +45,7 @@ export function SettingsPage() {
       <PageHeader title="Configurações" subtitle="As mudanças são salvas automaticamente." />
 
       <Section title="Downloads">
-        <Row label="Pasta de destino" hint="Onde os arquivos serão salvos.">
+        <Row label="Pasta de download preferida" hint="Todo download novo começa nesta pasta.">
           <PathField value={s.downloadDir} onOpen={() => api.openFolder(s.downloadDir)} onPick={async () => { const p = await api.pickFolder(s.downloadDir); if (p) save({ downloadDir: p }); }} />
         </Row>
         <Row label="Nome dos arquivos" hint="Como cada arquivo baixado será nomeado.">

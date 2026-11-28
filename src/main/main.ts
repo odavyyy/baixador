@@ -5,7 +5,7 @@ import { pathToFileURL } from 'node:url';
 import type { HistoryItem, Settings } from '../shared/types';
 import { dataDir, defaultDownloadDir, defaultSettings, JsonFile } from './store';
 import { logger } from './logger';
-import { analyze, autoDetect, cancelAnalyze, checkTools, updateYtdlp } from './ytdlp';
+import { analyze, analyzeBatch, autoDetect, cancelAnalyze, cancelBatch, checkTools, updateYtdlp } from './ytdlp';
 import { DownloadManager } from './downloads';
 import { Converter, detectHardware, probeFile } from './convert';
 import { Updater } from './updater';
@@ -136,8 +136,9 @@ function registerIpc() {
   });
   h('tools:update', () => updateYtdlp(settings.value));
 
-  h('analyze', (_e, url: string) => analyze(settings.value, url.trim()));
-  h('analyze:cancel', () => cancelAnalyze());
+  h('analyze', async (_e, url: string) => { await cancelBatch(); return analyze(settings.value, url.trim()); });
+  h('analyze:cancel', async () => { await Promise.all([cancelAnalyze(), cancelBatch()]); });
+  h('analyze:batch', (_e, urls: string[]) => analyzeBatch(settings.value, urls, (done, total) => send('batch:progress', { done, total })));
 
   h('jobs:enqueue', (_e, req) => manager.enqueue(req));
   h('jobs:enqueueMany', (_e, reqs) => manager.enqueueMany(reqs));
@@ -258,7 +259,7 @@ app.whenReady().then(() => {
         const batch = manager.list().filter((j) => j.batchId === job.batchId);
         if (batch.some((j) => ['queued', 'downloading', 'processing', 'paused'].includes(j.status))) return;
         const done = batch.filter((j) => j.status === 'completed');
-        notify('Playlist finalizada', `${job.batchTitle}\n${done.length} de ${batch.length} concluídos`, () => send('navigate', 'downloads'));
+        notify(job.batchKind === 'list' ? 'Lote finalizado' : 'Playlist finalizada', `${job.batchTitle}\n${done.length} de ${batch.length} concluídos`, () => send('navigate', 'downloads'));
         const file = done[0]?.filePath;
         if (settings.value.openFolderAfter && file) shell.showItemInFolder(file);
         return;

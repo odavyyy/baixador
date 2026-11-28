@@ -135,7 +135,8 @@ export class DownloadManager {
 
   /** Output template; adds " (720p)" etc. when a file with the plain name already exists. */
   private template(job: Job, s: Settings): string {
-    const base = TEMPLATES[s.filenameStyle] ?? TEMPLATES.title;
+    let base = TEMPLATES[s.filenameStyle] ?? TEMPLATES.title;
+    if (job.nameWithId && !base.includes('%(id)s')) base = base.replace('.%(ext)s', ' [%(id)s].%(ext)s');
     if (!job.nameSuffix) return base;
     const safe = job.nameSuffix.replace(/[<>:"/\|?*%]/g, '').trim();
     return base.replace('.%(ext)s', ` (${safe}).%(ext)s`);
@@ -302,6 +303,13 @@ export class DownloadManager {
         // A file with this name already exists (maybe another quality): download again with the quality in the name.
         logger.info(tag, `Já existe um arquivo com esse nome (${file}). Baixando como "(${job.qualityLabel})".`);
         job.nameSuffix = job.qualityLabel;
+        job.status = 'queued';
+        job.progress = 0;
+        job.downloaded = 0;
+      } else if (code === 0 && rt.alreadyExists && !job.nameWithId && this.hooks.settings().filenameStyle !== 'title-id') {
+        // Even that name is taken: it may be a different video with the same title, so add the id.
+        logger.info(tag, `Também já existe (${file}). Baixando com o ID do vídeo no nome.`);
+        job.nameWithId = true;
         job.status = 'queued';
         job.progress = 0;
         job.downloaded = 0;

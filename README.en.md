@@ -13,6 +13,7 @@ Portuguese only.** The Portuguese [README](README.md) is the main one and has mo
 - Paste a link, see the real list of resolutions, frame rates and audio tracks, and download video (MP4/MKV),
   MP3 or the original audio. Playlists and albums: pick the items you want.
 - Download queue with progress, pause/resume, cancel, retry and history.
+- **Batch download** (paste up to 100 links at once) and a **preferred download folder**.
 - **Video converter** (below).
 - **In-app updates** from this repository's GitHub releases, checked only when you click.
 
@@ -86,7 +87,7 @@ considered (no drafts, pre-releases, same or older versions). The download is ch
 release's `SHA256SUMS.txt`, and installation needs your confirmation. The installed version runs the new
 installer silently and restarts. The portable version swaps its folder after the app closes and keeps the old
 one as `<folder>.anterior-<version>`; if the folder contains files that aren't part of the app, the swap is
-refused. Version 1.0.0 has no updater, so move from it to 1.2.0 manually once.
+refused. Version 1.0.0 has no updater, so install the latest version manually once.
 
 ## Build
 

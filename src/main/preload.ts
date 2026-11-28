@@ -36,6 +36,8 @@ const api: Api = {
   updateYtdlp: inv('tools:update'),
   analyze: inv('analyze'),
   cancelAnalyze: inv('analyze:cancel'),
+  analyzeBatch: inv('analyze:batch'),
+  onBatchProgress: on('batch:progress'),
   enqueue: inv('jobs:enqueue'),
   enqueueMany: inv('jobs:enqueueMany'),
   listJobs: inv('jobs:list'),

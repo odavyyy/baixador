@@ -1,5 +1,14 @@
 # Histórico de versões
 
+## 1.3.0 (28/11/2026)
+
+- Novo: **download em lote**. Cole vários links de uma vez (até 100), escolha os itens, o formato e a pasta.
+  Links de playlist entram com todos os itens, links repetidos são ignorados e os que falham aparecem com o motivo.
+- Novo: **pasta de download preferida**. Ao trocar a pasta na tela de download, o botão "Usar sempre esta pasta"
+  a salva para os próximos. Sem clicar nele, a troca vale só daquela vez.
+- Correção: vídeos diferentes com o mesmo título recebem o ID no nome, em vez de um deles aparecer como
+  concluído apontando para o arquivo do outro.
+
 ## 1.2.0 (27/11/2026)
 
 - Novo: **Conversor** de vídeos com FFmpeg, presets (incluindo WhatsApp até 180 MB), modo personalizado, teste real

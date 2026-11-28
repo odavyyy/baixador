@@ -7,9 +7,9 @@
 **Português** · [English](README.en.md)
 
 <p align="center">
-  <a href="https://github.com/odavyyy/baixador/releases/download/v1.2.0/Baixador-Setup-1.2.0.exe"><img src="docs/botoes/baixar-instalador.svg" alt="Baixar o instalador para Windows (v1.2.0)" width="330"></a>
+  <a href="https://github.com/odavyyy/baixador/releases/download/v1.3.0/Baixador-Setup-1.3.0.exe"><img src="docs/botoes/baixar-instalador.svg" alt="Baixar o instalador para Windows (v1.3.0)" width="330"></a>
   &nbsp;&nbsp;
-  <a href="https://github.com/odavyyy/baixador/releases/download/v1.2.0/Baixador-1.2.0-win-x64.zip"><img src="docs/botoes/baixar-portatil.svg" alt="Baixar a versão portátil (v1.2.0)" width="330"></a>
+  <a href="https://github.com/odavyyy/baixador/releases/download/v1.3.0/Baixador-1.3.0-win-x64.zip"><img src="docs/botoes/baixar-portatil.svg" alt="Baixar a versão portátil (v1.3.0)" width="330"></a>
 </p>
 
 <p align="center">
@@ -50,6 +50,11 @@ nada passa por um servidor nosso. (Veja [O que acessa a internet](#o-que-acessa-
   ser salvo em uma pasta com o nome da playlist. Em um link de vídeo que também faz parte de uma playlist,
   o app oferece ver a playlist inteira. Em playlists, a qualidade de vídeo é um limite ("até 1080p"),
   porque cada vídeo não é analisado antes.
+- **Download em lote.** Cole vários links de uma vez (até 100), marque o que quiser e baixe tudo com o mesmo
+  formato. Links de playlist entram com os itens disponíveis, repetidos são ignorados e os que falham aparecem
+  com o motivo.
+- **Pasta preferida.** Trocou a pasta na tela de download? **Usar sempre esta pasta** a guarda para os próximos.
+  Sem esse clique, a troca vale só daquela vez.
 - **Conversor de vídeos.** Converta e reduza vídeos que já estão no computador, com presets prontos ou no modo
   personalizado. Veja [Conversor](#conversor).
 - **Atualização pelo próprio app.** Em **Configurações → Sobre e atualizações**, só quando você clica. Veja
@@ -132,7 +137,7 @@ instalar.
   fica guardada como `<pasta>.anterior-<versão>` e pode ser apagada depois que você conferir. Se a pasta do app
   tiver **outros arquivos seus**, a troca é recusada para não mexer neles.
 
-Quem usa a **1.0.0** precisa instalar a 1.2.0 manualmente uma vez, porque a 1.0.0 não tem o atualizador.
+Quem usa a **1.0.0** precisa instalar a versão mais recente manualmente uma vez, porque a 1.0.0 não tem o atualizador.
 
 ## Code signing policy
 
@@ -172,8 +177,8 @@ winget install DenoLand.Deno
 
 ## Instalação
 
-1. Baixe o `Baixador-Setup-1.2.0.exe` na página de [Releases](../../releases) e execute.
-   Há também a versão portátil, `Baixador-1.2.0-win-x64.zip`: extraia em qualquer pasta e abra o
+1. Baixe o `Baixador-Setup-1.3.0.exe` na página de [Releases](../../releases) e execute.
+   Há também a versão portátil, `Baixador-1.3.0-win-x64.zip`: extraia em qualquer pasta e abra o
    `Baixador.exe`.
 2. Abra o **Baixador**. Na primeira vez, ele procura o yt-dlp e o FFmpeg (veja abaixo). Se não
    encontrar, a tela inicial avisa, e você pode indicar os caminhos em **Configurações → Programas**.
@@ -301,7 +306,20 @@ arquivos JSON em `%APPDATA%\Baixador`. As capas ficam na pasta `thumbs`, e os lo
 
 ## Testes e situação atual
 
-Versão 1.2.0, testada no Windows 11 Pro x64, com yt-dlp 2026.10.26, FFmpeg de novembro de 2026 e uma RTX 5060 Ti.
+Testes feitos no Windows 11 Pro x64, com yt-dlp 2026.10.26, FFmpeg de novembro de 2026 e uma RTX 5060 Ti.
+
+**Novidades da 1.3.0:**
+- Lote em MP3 (versão de desenvolvimento), com vídeos do YouTube, uma playlist, um link repetido, um inválido e o
+  cancelamento da análise. Pasta preferida mantida depois de reabrir; troca de uma só vez sem alterá-la (a janela
+  de escolher pasta foi simulada).
+- No zip portátil empacotado: lote em vídeo, incluindo dois vídeos diferentes com o mesmo título (páginas locais
+  de teste), cada um salvo em seu próprio arquivo.
+- Atualização portátil: a 1.2.0 publicada passou para a 1.3.0 e reabriu, mantendo configurações e histórico. A
+  origem foi um servidor local.
+- Instalador: uma cópia de teste com outro nome e ID foi instalada em modo silencioso, reinstalada por cima,
+  aberta e desinstalada. O assistente com janelas não foi testado.
+
+Os resultados abaixo, do conversor e do atualizador, são dos testes da 1.2.0; esse código não mudou.
 
 **Conversor** (55 de 55 testes com o FFmpeg real, saídas conferidas com o ffprobe): os presets, CPU e NVENC
 (H.264, H.265 e AV1), limites de tamanho, vídeo curto, longo, 4K, sem áudio, vertical, HDR, nomes com

@@ -2,7 +2,8 @@
 import { spawn, execFile, execFileSync, type ChildProcess } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-import type { AnalyzeResult, AudioOption, MediaInfo, PlaylistInfo, Settings, ToolStatus, VideoOption } from '../shared/types';
+import type { AnalyzeResult, AudioOption, BatchResult, MediaInfo, PlaylistEntry, PlaylistInfo, Settings, ToolStatus, VideoOption } from '../shared/types';
+import { MAX_BATCH_LINKS } from '../shared/links';
 import { logger } from './logger';
 
 export const childEnv = () => ({ ...process.env, PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1' });
@@ -135,6 +136,87 @@ export function analyze(s: Settings, url: string): Promise<AnalyzeResult> {
       }
     });
   });
+}
+
+// ---------------------------------------------------------------- batch (several links at once)
+
+let batchRun = 0;
+const batchChildren = new Set<ChildProcess>();
+
+export async function cancelBatch() {
+  batchRun++;
+  await Promise.all([...batchChildren].map((c) => killTree(c)));
+}
+
+/** yt-dlp's JSON for one link. Separate from analyze(), which only ever runs one process. */
+function readLink(s: Settings, url: string): Promise<{ json?: any; error?: string }> {
+  return new Promise((resolve) => {
+    const args = [...baseArgs(s), '-J', '--no-playlist', '--flat-playlist', '--', url];
+    const child = spawn(s.ytdlpPath, args, { windowsHide: true, env: childEnv() });
+    batchChildren.add(child);
+    const out: Buffer[] = [];
+    let err = '';
+    let timedOut = false;
+    const timer = setTimeout(() => { timedOut = true; void killTree(child); }, 120_000);
+    const done = (r: { json?: any; error?: string }) => { clearTimeout(timer); batchChildren.delete(child); resolve(r); };
+    child.stdout.on('data', (d: Buffer) => out.push(d));
+    child.stderr.on('data', (d: Buffer) => { err += d.toString('utf8'); });
+    child.on('error', () => done({ error: 'Não foi possível executar o yt-dlp.' }));
+    child.on('close', (code) => {
+      if (timedOut) return done({ error: 'O site demorou demais para responder.' });
+      if (code !== 0) {
+        logger.warn('batch', `${url}\n${err.trim()}`);
+        return done({ error: friendlyError(err) });
+      }
+      try { done({ json: JSON.parse(Buffer.concat(out).toString('utf8')) }); } catch { done({ error: 'Resposta inesperada do yt-dlp.' }); }
+    });
+  });
+}
+
+/** Reads the title of each pasted link (a playlist link becomes its items), a few at a time. */
+export async function analyzeBatch(s: Settings, links: string[], onProgress: (done: number, total: number) => void): Promise<BatchResult> {
+  if (!fs.existsSync(s.ytdlpPath)) return { ok: false, error: 'O yt-dlp não foi encontrado. Confira o caminho em Configurações.' };
+  await cancelAnalyze();
+  await cancelBatch();
+  const run = batchRun;
+  const urls = links.filter((u) => /^https?:\/\/\S+$/i.test(u)).slice(0, MAX_BATCH_LINKS);
+  logger.info('batch', `Verificando ${urls.length} links`);
+  const results: { entries: PlaylistEntry[]; skipped: number; error?: string }[] = new Array(urls.length);
+  let next = 0, finished = 0;
+  onProgress(0, urls.length);
+  const worker = async () => {
+    while (next < urls.length && run === batchRun) {
+      const i = next++;
+      const url = urls[i];
+      const r = await readLink(s, url);
+      if (run !== batchRun) return;
+      results[i] = { entries: [], skipped: 0, error: r.error };
+      try {
+        if (r.json?._type === 'playlist') {
+          const p = parsePlaylist(r.json, url);
+          results[i] = { entries: p.entries, skipped: p.skipped, error: p.entries.length ? undefined : 'Nenhum item disponível nesta playlist.' };
+        } else if (r.json?.is_live) {
+          results[i].error = 'Transmissão ao vivo não pode ser baixada aqui.';
+        } else if (r.json) {
+          const m = parseInfo(r.json, url);
+          results[i] = { entries: [{ id: m.id, url: m.url, title: m.title, uploader: m.uploader, duration: m.duration, thumbnail: m.thumbnail }], skipped: 0 };
+        }
+      } catch {
+        results[i].error = 'Resposta inesperada do yt-dlp.';
+      }
+      onProgress(++finished, urls.length);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(3, urls.length) }, worker));
+  if (run !== batchRun) return { ok: false, error: 'Análise cancelada.' };
+
+  const seen = new Set<string>();
+  const entries = results.flatMap((r) => r.entries).filter((e) => !seen.has(e.url) && !!seen.add(e.url));
+  const failed = results.flatMap((r, i) => (r.error ? [{ url: urls[i], error: r.error }] : []));
+  const skipped = results.reduce((n, r) => n + r.skipped, 0);
+  logger.info('batch', `${entries.length} itens prontos · ${failed.length} links com erro`);
+  if (!entries.length) return { ok: false, error: 'Nenhum dos links pôde ser lido.', failed };
+  return { ok: true, playlist: { url: `lote:${run}:${Date.now()}`, title: 'Lista de links', entries, skipped, failed, isList: true } };
 }
 
 /** For a YouTube video link that also carries a real playlist id (mixes "RD…" are endless, so they don't count). */

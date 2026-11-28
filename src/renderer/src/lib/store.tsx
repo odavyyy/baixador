@@ -1,6 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import type { ConvertRequest, ConvertSettings, ConvertState, EncoderPref, MediaProbe } from '@shared/convert';
-import type { Api, HistoryItem, Job, MediaInfo, PlaylistInfo, Settings, ToolStatus } from '@shared/types';
+import type { Api, FailedLink, HistoryItem, Job, MediaInfo, PlaylistInfo, Settings, ToolStatus } from '@shared/types';
 
 declare global { interface Window { api: Api } }
 export const api = window.api;
@@ -36,6 +36,11 @@ export interface HomeState {
   playlist?: PlaylistInfo;
   error?: string;
   errorDetail?: string;
+  /** "several links" mode and the text typed in it */
+  batchMode?: boolean;
+  batchText?: string;
+  batchProgress?: { done: number; total: number };
+  failed?: FailedLink[];
 }
 
 interface Store {
@@ -52,6 +57,7 @@ interface Store {
   home: HomeState;
   setHome: React.Dispatch<React.SetStateAction<HomeState>>;
   analyzeUrl: (url: string) => Promise<void>;
+  analyzeList: (urls: string[], text: string) => Promise<void>;
   tools: ToolStatus | null;
   convert: ConvertState;
   conv: ConverterUi;
@@ -121,7 +127,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         if (ended && !announced.current.has(j.batchId)) {
           announced.current.add(j.batchId);
           const ok = batch.filter((x) => x.status === 'completed').length;
-          toast({ kind: ok === batch.length ? 'ok' : 'error', title: 'Playlist finalizada', msg: `${j.batchTitle} · ${ok} de ${batch.length} concluídos`, action: { label: 'Ver downloads', run: () => setPage('downloads') } });
+          toast({ kind: ok === batch.length ? 'ok' : 'error', title: j.batchKind === 'list' ? 'Lote finalizado' : 'Playlist finalizada', msg: `${j.batchTitle} · ${ok} de ${batch.length} concluídos`, action: { label: 'Ver downloads', run: () => setPage('downloads') } });
         }
       } else if (before && before !== j.status) {
         if (j.status === 'completed') {
@@ -160,9 +166,24 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
+  const listRun = useRef(0);
+  useEffect(() => api.onBatchProgress((p) => setHome((h) => (h.batchMode && h.phase === 'analyzing' ? { ...h, batchProgress: p } : h))), []);
+  const analyzeList = useCallback(async (urls: string[], text: string) => {
+    const run = ++listRun.current;
+    const base = { url: '', batchMode: true, batchText: text };
+    setHome({ ...base, phase: 'analyzing', batchProgress: { done: 0, total: urls.length } });
+    setPage('home');
+    const r = await api.analyzeBatch(urls);
+    setHome((h) => {
+      if (run !== listRun.current || !h.batchMode || h.phase !== 'analyzing') return h; // user moved on
+      if (r.ok) return { ...base, phase: 'ready', playlist: r.playlist };
+      return r.error === 'Análise cancelada.' ? { ...base, phase: 'idle' } : { ...base, phase: 'error', error: r.error, failed: r.failed };
+    });
+  }, []);
+
   const value = useMemo<Store>(
-    () => ({ settings, updateSettings, jobs, history, page, go, toasts, toast, dismiss, dark, home, setHome, analyzeUrl, tools, convert, conv, setConv, startConvert, dismissConvert }),
-    [convert, conv, startConvert, dismissConvert, settings, updateSettings, jobs, history, page, go, toasts, toast, dismiss, dark, home, analyzeUrl, tools],
+    () => ({ settings, updateSettings, jobs, history, page, go, toasts, toast, dismiss, dark, home, setHome, analyzeUrl, analyzeList, tools, convert, conv, setConv, startConvert, dismissConvert }),
+    [convert, conv, startConvert, dismissConvert, settings, updateSettings, jobs, history, page, go, toasts, toast, dismiss, dark, home, analyzeUrl, analyzeList, tools],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
