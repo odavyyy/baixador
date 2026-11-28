@@ -14,6 +14,7 @@ const api: Api = {
   downloadUpdate: inv('update:download'),
   cancelUpdate: inv('update:cancel'),
   installUpdate: inv('update:install'),
+  updateNow: inv('update:now'),
   openReleasePage: inv('update:page'),
   onUpdate: on('update:update'),
   readDoc: inv('docs:read'),

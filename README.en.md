@@ -82,10 +82,11 @@ and WebM.
 
 ## Updates
 
-**Configurações → Sobre e atualizações → Verificar atualizações.** Only the latest stable release is
-considered (no drafts, pre-releases, same or older versions). The download is checked against its size and the
-release's `SHA256SUMS.txt`, and installation needs your confirmation. The installed version runs the new
-installer silently and restarts. The portable version swaps its folder after the app closes and keeps the old
+**Configurações → Sobre e atualizações → Atualizar app.** One click checks, downloads, verifies, installs and
+reopens the app (from 1.4.0 on; **Só verificar** shows the release notes first). Only the latest stable release
+is considered (no drafts, pre-releases, same or older versions). The download is checked against the release's
+`SHA256SUMS.txt` (and its size, when announced). If the GitHub API request limit is hit, the public releases
+page is used instead, without release notes. The installed version runs the new installer silently and restarts. The portable version swaps its folder after the app closes and keeps the old
 one as `<folder>.anterior-<version>`; if the folder contains files that aren't part of the app, the swap is
 refused. Version 1.0.0 has no updater, so install the latest version manually once.
 

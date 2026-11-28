@@ -1,5 +1,12 @@
 # Histórico de versões
 
+## 1.4.0 (28/11/2026)
+
+- Novo: **atualização em um clique**. **Atualizar app** (ou **Atualizar agora**) baixa, confere o SHA-256,
+  instala e reabre o Baixador, sem as etapas separadas de baixar, instalar e confirmar.
+- Correção: quando o GitHub recusa a consulta pelo limite de pedidos, o app usa a página pública de releases.
+  Nesse caso as notas da versão não aparecem no app; a conferência pelo `SHA256SUMS.txt` continua obrigatória.
+
 ## 1.3.0 (28/11/2026)
 
 - Novo: **download em lote**. Cole vários links de uma vez (até 100), escolha os itens, o formato e a pasta.

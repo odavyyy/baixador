@@ -6,8 +6,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {
-  compareVersions, hashFromSums, LATEST_API, readRelease, REPO,
-  type InstallKind, type ReleaseAsset, type UpdateState,
+  assetName, compareVersions, hashFromSums, LATEST_API, LATEST_PAGE, readRelease, RELEASES_PAGE, REPO, tagFromLatestRedirect,
+  type InstallKind, type ReleaseAsset, type UpdateInfo, type UpdateState,
 } from '../shared/update';
 import { logger } from './logger';
 
@@ -29,6 +29,9 @@ export interface UpdaterOptions {
 
 const GITHUB_HOSTS = (h: string) => h === 'api.github.com' || h === 'github.com' || h.endsWith('.githubusercontent.com');
 const STALL_MS = 30_000;
+/** ceiling for a download whose size the server didn't announce */
+const MAX_UNKNOWN_SIZE = 600 * 1024 * 1024;
+const LIMITED = 'O GitHub limitou as consultas por enquanto, e o caminho alternativo também não funcionou. Tente de novo mais tarde (pode levar até uma hora) ou use "Ver no GitHub".';
 
 export function localTestFeed(raw?: string): URL | undefined {
   if (!raw) return undefined;
@@ -49,6 +52,8 @@ export class Updater {
   private hash?: string;
   private feed?: URL;
   private root: string;
+  private oneClick = false;
+  private starting = false;
 
   constructor(private o: UpdaterOptions) {
     this.feed = localTestFeed(o.testFeed);
@@ -80,11 +85,11 @@ export class Updater {
   }
 
   /** fetch with manual redirects, so every hop is checked against the allow list. */
-  private async get(url: string, signal: AbortSignal, accept: string): Promise<Response> {
+  private async get(url: string, signal: AbortSignal, accept: string, method = 'GET'): Promise<Response> {
     let current = new URL(url);
     for (let hop = 0; hop < 6; hop++) {
       if (!this.allowed(current)) throw new UserError('Endereço de atualização não permitido.');
-      const res = await fetch(current, { redirect: 'manual', signal, headers: { Accept: accept, 'User-Agent': 'Baixador-updater' } });
+      const res = await fetch(current, { method, redirect: 'manual', signal, headers: { Accept: accept, 'User-Agent': 'Baixador-updater' } });
       if (res.status >= 300 && res.status < 400 && res.headers.get('location')) {
         current = new URL(res.headers.get('location')!, current);
         continue;
@@ -99,17 +104,73 @@ export class Updater {
     return 'Falha de conexão com o GitHub. Verifique sua internet e tente de novo.';
   }
 
+  /**
+   * Used when the API refuses because of its request limit. The public "latest" page redirects to the newest
+   * stable release (never a draft or prerelease). There are no release notes or API digest this way; the
+   * download is still refused unless it matches the release's SHA256SUMS.txt.
+   */
+  private async latestFromWebsite(): Promise<UpdateInfo> {
+    const signal = AbortSignal.timeout(20_000);
+    const latest = new URL(this.feed ? `${this.feed.origin}/releases/latest` : LATEST_PAGE);
+    const releases = this.feed ? `${this.feed.origin}/releases` : RELEASES_PAGE;
+    // only the address is read, so this one redirect is not followed
+    const res = await fetch(latest, { method: 'HEAD', redirect: 'manual', signal, headers: { 'User-Agent': 'Baixador-updater' } });
+    const location = res.headers.get('location');
+    const tag = res.status >= 300 && res.status < 400 && location ? tagFromLatestRedirect(new URL(location, latest).href, releases) : undefined;
+    if (!tag) throw new UserError(LIMITED);
+    const version = tag.slice(1);
+    const base = this.feed ? `${this.feed.origin}/download/` : `https://github.com/${REPO}/releases/download/`;
+    const find = async (name: string): Promise<ReleaseAsset | undefined> => {
+      const url = `${base}${tag}/${name}`;
+      const head = await this.get(url, signal, 'application/octet-stream', 'HEAD');
+      if (head.status === 404) return undefined;
+      if (!head.ok) throw new UserError(LIMITED);
+      return { name, url, size: Number(head.headers.get('content-length')) || 0 };
+    };
+    return {
+      version, notes: '', page: `${RELEASES_PAGE}/tag/${tag}`,
+      asset: await find(assetName(this.o.kind, version)),
+      sums: await find('SHA256SUMS.txt'),
+    };
+  }
+
+  /** One click: look for a new version, download it, verify it, install it and reopen the app. */
+  async updateNow(): Promise<{ ok: boolean; error?: string }> {
+    if (this.oneClick || ['checking', 'downloading', 'verifying', 'installing'].includes(this.state.status)) return { ok: true };
+    this.oneClick = true;
+    try {
+      if (this.state.status !== 'ready') {
+        if (this.state.status !== 'available') await this.check();
+        if (this.state.status !== 'available' || this.state.manualReason) return { ok: true };
+        // refuse before spending the download, not only after it
+        const reason = this.o.busy();
+        if (reason) return { ok: false, error: reason };
+        await this.download();
+      }
+      // cancelled or failed: the state already says so. If a task started meanwhile, install() refuses and
+      // the verified download stays ready.
+      return (this.state.status as UpdateState['status']) === 'ready' ? await this.install() : { ok: true };
+    } finally {
+      this.oneClick = false;
+    }
+  }
+
   async check(): Promise<UpdateState> {
     if (['checking', 'downloading', 'verifying', 'installing'].includes(this.state.status)) return this.state;
     this.set({ status: 'checking', error: undefined, info: undefined, manualReason: undefined, lastResult: undefined });
     try {
       const url = this.feed ? this.feed.href : LATEST_API;
       const res = await this.get(url, AbortSignal.timeout(20_000), 'application/vnd.github+json');
-      if (res.status === 404) throw new UserError('Nenhuma versão estável publicada foi encontrada.');
-      if (res.status === 403 || res.status === 429) throw new UserError('O GitHub limitou as consultas por enquanto. Tente de novo em alguns minutos.');
-      if (!res.ok) throw new UserError(`O GitHub respondeu com erro (${res.status}).`);
-      const base = this.feed ? `${this.feed.origin}/download/` : `https://github.com/${REPO}/releases/download/`;
-      const info = readRelease(await res.json(), this.o.kind, base);
+      let info: UpdateInfo | { ignored: string };
+      if (res.status === 403 || res.status === 429) {
+        logger.warn('update', `A API do GitHub recusou a consulta (${res.status}). Usando a página pública de releases.`);
+        info = await this.latestFromWebsite();
+      } else {
+        if (res.status === 404) throw new UserError('Nenhuma versão estável publicada foi encontrada.');
+        if (!res.ok) throw new UserError(`O GitHub respondeu com erro (${res.status}).`);
+        const base = this.feed ? `${this.feed.origin}/download/` : `https://github.com/${REPO}/releases/download/`;
+        info = readRelease(await res.json(), this.o.kind, base);
+      }
       if ('ignored' in info) {
         logger.warn('update', `Release ignorada: ${info.ignored}`);
         this.set({ status: 'uptodate', checkedAt: Date.now() });
@@ -125,7 +186,7 @@ export class Updater {
           : !info.sums ? 'Esta versão não tem o arquivo SHA256SUMS.txt, necessário para conferir o download.'
             : undefined;
       logger.info('update', `Nova versão disponível: ${info.version} (instalada: ${this.o.version}, formato: ${this.o.kind})`);
-      this.set({ status: 'available', info, manualReason, checkedAt: Date.now(), total: info.asset?.size });
+      this.set({ status: 'available', info, manualReason, checkedAt: Date.now(), total: info.asset?.size || undefined });
     } catch (e: any) {
       logger.error('update', `Verificação falhou: ${e.message}${e.cause ? ' · ' + e.cause.message : ''}`);
       this.set({ status: 'error', error: this.describe(e) });
@@ -146,7 +207,7 @@ export class Updater {
     let stalled = false;
     const kick = () => { clearTimeout(stall); stall = setTimeout(() => { stalled = true; this.abort?.abort(); }, STALL_MS); };
     this.file = undefined;
-    this.set({ status: 'downloading', error: undefined, received: 0, total: asset.size, speed: 0 });
+    this.set({ status: 'downloading', error: undefined, received: 0, total: asset.size || undefined, speed: 0 });
     let fd: number | undefined;
     try {
       fs.rmSync(dir, { recursive: true, force: true });
@@ -162,14 +223,14 @@ export class Updater {
       const res = await this.get(asset.url, signal, 'application/octet-stream');
       if (!res.ok || !res.body) throw new UserError(`Não foi possível baixar a atualização (${res.status}).`);
       const declared = Number(res.headers.get('content-length'));
-      if (declared && declared !== asset.size) throw new UserError('O tamanho do arquivo não confere com o publicado.');
+      if (declared && asset.size && declared !== asset.size) throw new UserError('O tamanho do arquivo não confere com o publicado.');
       const sha = createHash('sha256');
       fd = fs.openSync(part, 'w');
       let received = 0, mark = Date.now(), markBytes = 0, speed = 0;
       for await (const chunk of res.body as any as AsyncIterable<Uint8Array>) {
         kick();
         received += chunk.length;
-        if (received > asset.size) throw new UserError('O arquivo recebido é maior que o publicado.');
+        if (received > (asset.size || declared || MAX_UNKNOWN_SIZE)) throw new UserError('O arquivo recebido é maior que o publicado.');
         sha.update(chunk);
         fs.writeSync(fd, chunk);
         const now = Date.now();
@@ -182,7 +243,8 @@ export class Updater {
       fs.closeSync(fd);
       fd = undefined;
       clearTimeout(stall);
-      if (received !== asset.size) throw new UserError('O download veio incompleto. Tente novamente.');
+      const size = asset.size || declared;
+      if (size && received !== size) throw new UserError('O download veio incompleto. Tente novamente.');
       this.set({ status: 'verifying', received, speed: undefined });
       if (sha.digest('hex') !== expected) throw new UserError('A verificação SHA-256 falhou: o arquivo não é o publicado. Ele foi apagado.');
       const head = Buffer.alloc(2);
@@ -216,8 +278,18 @@ export class Updater {
     this.abort?.abort();
   }
 
-  /** Called only after the user confirms in the UI. */
+  /** Called only after the user asks for it in the UI. */
   async install(): Promise<{ ok: boolean; error?: string }> {
+    if (this.starting) return { ok: true };
+    this.starting = true;
+    try {
+      return await this.startInstall();
+    } finally {
+      this.starting = false;
+    }
+  }
+
+  private async startInstall(): Promise<{ ok: boolean; error?: string }> {
     if (this.state.status !== 'ready' || !this.file || !this.hash || !this.state.info) return { ok: false, error: 'Baixe a atualização primeiro.' };
     const reason = this.o.busy();
     if (reason) return { ok: false, error: reason };

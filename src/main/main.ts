@@ -166,6 +166,7 @@ function registerIpc() {
   h('update:download', () => updater.download());
   h('update:cancel', () => updater.cancel());
   h('update:install', () => updater.install());
+  h('update:now', () => updater.updateNow());
   h('update:page', () => shell.openExternal(RELEASES_PAGE));
   h('docs:read', (_e, doc: string) => {
     const name = DOCS[doc];

@@ -9,7 +9,7 @@ import path from 'node:path';
 import { createHash, randomBytes } from 'node:crypto';
 import { spawn } from 'node:child_process';
 import { Updater, localTestFeed, startHelper } from '../src/main/updater';
-import { compareVersions, hashFromSums, parseVersion, readRelease, type InstallKind, type UpdateState } from '../src/shared/update';
+import { compareVersions, hashFromSums, parseVersion, readRelease, RELEASES_PAGE, tagFromLatestRedirect, type InstallKind, type UpdateState } from '../src/shared/update';
 
 const results: { name: string; ok: boolean; kind: 'SIMULADO' | 'REAL'; info: string }[] = [];
 let mode: 'SIMULADO' | 'REAL' = 'SIMULADO';
@@ -22,6 +22,8 @@ const payload = Buffer.concat([Buffer.from('MZ'), randomBytes(3 * 1024 * 1024)])
 interface Scenario {
   tag?: string; draft?: boolean; prerelease?: boolean; sums?: string | null; digest?: string; body?: Buffer;
   download?: 'ok' | 'slow' | 'cut' | 'short' | 'redirect-evil' | '500'; assetUrl?: string; api?: number; garbage?: boolean;
+  /** what the public "latest release" page redirects to; null = it fails too */
+  latest?: string | null; noLength?: boolean;
 }
 let scenario: Scenario = {};
 const server = http.createServer((req, res) => {
@@ -30,6 +32,14 @@ const server = http.createServer((req, res) => {
   const version = tag.replace(/^v/, '');
   const name = `Baixador-Setup-${version}.exe`;
   const body = scenario.body ?? payload;
+  if (req.url === '/releases/latest') {
+    if (scenario.latest === null) return void res.writeHead(429).end();
+    return void res.writeHead(302, { location: scenario.latest ?? `${base}/releases/tag/${tag}` }).end();
+  }
+  if (req.method === 'HEAD' && req.url?.startsWith('/download/')) {
+    if (req.url.endsWith('/SHA256SUMS.txt')) return void res.writeHead(scenario.sums === null ? 404 : 200).end();
+    return void res.writeHead(req.url.endsWith(name) ? 200 : 404, scenario.noLength ? {} : { 'content-length': body.length }).end();
+  }
   if (req.url === '/latest') {
     if (scenario.api) return void res.writeHead(scenario.api).end();
     if (scenario.garbage) return void res.writeHead(200).end('<html>');
@@ -43,7 +53,7 @@ const server = http.createServer((req, res) => {
     if (d === '500') return void res.writeHead(500).end();
     if (d === 'redirect-evil') return void res.writeHead(302, { location: 'https://example.com/evil.exe' }).end();
     if (d === 'short') { res.writeHead(200); return void res.end(body.subarray(0, body.length / 2)); }
-    res.writeHead(200, { 'content-length': body.length });
+    res.writeHead(200, scenario.noLength ? {} : { 'content-length': body.length });
     if (d === 'cut') { res.write(body.subarray(0, body.length / 3)); return void setTimeout(() => res.destroy(), 200); }
     if (d === 'slow') {
       let off = 0;
@@ -155,7 +165,56 @@ async function main() {
   await failing('arquivo inválido (hash certo, não é executável)', { body: Buffer.from('<html>erro</html>'.repeat(100)) }, /não é um instalador/);
   await failing('redirecionamento para outro endereço é bloqueado', { download: 'redirect-evil' }, /não permitido/);
   await failing('erro do servidor no download', { download: '500' }, /500/);
-  await failing('limite de consultas do GitHub', { api: 403 }, /limitou/);
+  for (const [name, sc] of [['limite da API (403): usa a página pública e conclui o download', { api: 403 }], ['limite da API (429) e tamanho não informado: conclui o download', { api: 429, noLength: true }]] as const) {
+    scenario = sc;
+    const t = make();
+    await t.u.check();
+    const found = t.u.state.status === 'available' && t.u.state.info?.version === '2.0.0' && !t.u.state.manualReason;
+    await t.u.download();
+    record(name, found && t.u.state.status === 'ready' && t.files().length === 1, t.u.state.error ?? t.u.state.status);
+  }
+  await failing('limite da API e página também recusada', { api: 403, latest: null }, /limitou/);
+  await failing('limite da API: redirecionamento para outro endereço é recusado', { api: 403, latest: 'https://example.com/releases/tag/v9.0.0' }, /limitou/);
+  await failing('limite da API: hash inválido continua recusado', { api: 403, sums: `${'0'.repeat(64)}  Baixador-Setup-2.0.0.exe\n` }, /SHA-256 falhou/);
+  record('limite da API: só aceita tag vX.Y.Z deste repositório',
+    tagFromLatestRedirect(`${RELEASES_PAGE}/tag/v1.4.0`) === 'v1.4.0'
+    && !tagFromLatestRedirect(`${RELEASES_PAGE}/tag/v1.4.0-rc1`) && !tagFromLatestRedirect(`${RELEASES_PAGE}/tag/v1.4.0/../x`)
+    && !tagFromLatestRedirect('https://github.com/outro/repo/releases/tag/v9.0.0') && !tagFromLatestRedirect(RELEASES_PAGE));
+  scenario = { api: 403, sums: null };
+  {
+    const t = make();
+    await t.u.check();
+    record('limite da API sem SHA256SUMS: não oferece instalar', t.u.state.status === 'available' && /SHA256SUMS/.test(t.u.state.manualReason ?? ''), t.u.state.manualReason);
+  }
+  scenario = {};
+  {
+    const t = make({ version: '2.0.0' });
+    const r = await t.u.updateNow();
+    record('um clique sem versão nova: só informa', r.ok && t.u.state.status === 'uptodate' && !t.quit() && t.files().length === 0, t.u.state.status);
+  }
+  {
+    const t = make({ busy: () => 'Há downloads em andamento.' });
+    const r = await t.u.updateNow();
+    record('um clique com tarefas em andamento: recusa antes de baixar', !r.ok && t.u.state.status === 'available' && !t.states.some((s) => s.status === 'downloading') && !t.quit(), r.error);
+  }
+  {
+    let started = false;
+    const t = make({ busy: () => (started ? 'Há downloads em andamento.' : undefined), onState: (s) => { if (s.status === 'verifying') started = true; } });
+    const r = await t.u.updateNow();
+    record('um clique, tarefa começa durante o download: guarda o download e não fecha', !r.ok && t.u.state.status === 'ready' && t.files().length === 1 && !t.quit(), r.error);
+  }
+  scenario = { download: 'slow' };
+  {
+    const t = make({ onState: (s, u) => { if (s.status === 'downloading' && (s.received ?? 0) > 700_000) u.cancel(); } });
+    const r = await t.u.updateNow();
+    record('um clique cancelado: nada é instalado', r.ok && t.u.state.status === 'available' && t.files().length === 0 && !t.quit(), t.u.state.status);
+  }
+  scenario = { sums: `${'0'.repeat(64)}  Baixador-Setup-2.0.0.exe\n` };
+  {
+    const t = make();
+    await t.u.updateNow();
+    record('um clique com hash inválido: nada é instalado', t.u.state.status === 'error' && t.files().length === 0 && !t.quit(), t.u.state.error);
+  }
   await failing('resposta que não é JSON', { garbage: true }, /conexão|GitHub/);
   scenario = { sums: null };
   {

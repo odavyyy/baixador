@@ -1,7 +1,7 @@
 {
   "name": "baixador",
   "productName": "Baixador",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "App simples para Windows que baixa vídeo e áudio com yt-dlp e FFmpeg.",
   "license": "MIT",
   "author": "odavyyy",

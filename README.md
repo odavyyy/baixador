@@ -7,9 +7,9 @@
 **Português** · [English](README.en.md)
 
 <p align="center">
-  <a href="https://github.com/odavyyy/baixador/releases/download/v1.3.0/Baixador-Setup-1.3.0.exe"><img src="docs/botoes/baixar-instalador.svg" alt="Baixar o instalador para Windows (v1.3.0)" width="330"></a>
+  <a href="https://github.com/odavyyy/baixador/releases/download/v1.4.0/Baixador-Setup-1.4.0.exe"><img src="docs/botoes/baixar-instalador.svg" alt="Baixar o instalador para Windows (v1.4.0)" width="330"></a>
   &nbsp;&nbsp;
-  <a href="https://github.com/odavyyy/baixador/releases/download/v1.3.0/Baixador-1.3.0-win-x64.zip"><img src="docs/botoes/baixar-portatil.svg" alt="Baixar a versão portátil (v1.3.0)" width="330"></a>
+  <a href="https://github.com/odavyyy/baixador/releases/download/v1.4.0/Baixador-1.4.0-win-x64.zip"><img src="docs/botoes/baixar-portatil.svg" alt="Baixar a versão portátil (v1.4.0)" width="330"></a>
 </p>
 
 <p align="center">
@@ -57,7 +57,7 @@ nada passa por um servidor nosso. (Veja [O que acessa a internet](#o-que-acessa-
   Sem esse clique, a troca vale só daquela vez.
 - **Conversor de vídeos.** Converta e reduza vídeos que já estão no computador, com presets prontos ou no modo
   personalizado. Veja [Conversor](#conversor).
-- **Atualização pelo próprio app.** Em **Configurações → Sobre e atualizações**, só quando você clica. Veja
+- **Atualização em um clique.** Em **Configurações → Sobre e atualizações**, só quando você clica. Veja
   [Atualizações](#atualizações).
 - **Detecção de links copiados.** Copie um link em qualquer lugar e o app oferece colar.
 - **Configurações**
@@ -127,10 +127,17 @@ virou 168 MB em 93 s pela CPU e 162 MB em 29 s pela GPU.
 
 ## Atualizações
 
-Em **Configurações → Sobre e atualizações**, clique em **Verificar atualizações**. O app consulta a última
-release estável deste repositório (ignora rascunhos, pré-lançamentos e versões iguais ou antigas), mostra as
-notas, baixa o arquivo, confere o tamanho e o **SHA-256** com o `SHA256SUMS.txt` e pede confirmação para
-instalar.
+Em **Configurações → Sobre e atualizações**, clique em **Atualizar app**: o Baixador consulta a última release
+estável deste repositório (ignora rascunhos, pré-lançamentos e versões iguais ou antigas), baixa o arquivo,
+confere o **SHA-256** com o `SHA256SUMS.txt` (e o tamanho, quando informado), instala e abre de novo. Com
+downloads ou conversão em andamento, ele não fecha. Para ver as notas antes, use **Só verificar** e depois
+**Atualizar agora**. Nada acontece sem um clique seu.
+
+Se a API do GitHub recusar a consulta pelo limite de pedidos, o app descobre a versão pela página pública de
+releases (sem as notas da versão).
+
+A atualização em um clique existe a partir da **1.4.0**: ela vale para as atualizações feitas *a partir* dessa
+versão. Nas anteriores, o processo tem etapas separadas.
 
 - **Versão instalada:** baixa o instalador, roda em modo silencioso e reabre o app.
 - **Versão portátil:** baixa o zip, extrai ao lado, e troca a pasta depois que o app fecha. A pasta anterior
@@ -177,8 +184,8 @@ winget install DenoLand.Deno
 
 ## Instalação
 
-1. Baixe o `Baixador-Setup-1.3.0.exe` na página de [Releases](../../releases) e execute.
-   Há também a versão portátil, `Baixador-1.3.0-win-x64.zip`: extraia em qualquer pasta e abra o
+1. Baixe o `Baixador-Setup-1.4.0.exe` na página de [Releases](../../releases) e execute.
+   Há também a versão portátil, `Baixador-1.4.0-win-x64.zip`: extraia em qualquer pasta e abra o
    `Baixador.exe`.
 2. Abra o **Baixador**. Na primeira vez, ele procura o yt-dlp e o FFmpeg (veja abaixo). Se não
    encontrar, a tela inicial avisa, e você pode indicar os caminhos em **Configurações → Programas**.
@@ -282,8 +289,8 @@ arquivos JSON em `%APPDATA%\Baixador`. As capas ficam na pasta `thumbs`, e os lo
   histórico.
 - **Atualizar yt-dlp** (em Diagnóstico) executa `yt-dlp -U`, que baixa a versão oficial. Isso só acontece
   quando você clica.
-- **Verificar atualizações** (em Configurações) consulta o GitHub e, se você pedir, baixa a nova versão.
-  Só quando você clica.
+- **Atualizar app** ou **Só verificar** (em Configurações) consultam o GitHub; **Atualizar app** também baixa e
+  instala a versão nova. Só quando você clica.
 - **Cookies do navegador** (desativado por padrão) permite que o yt-dlp leia os cookies do seu navegador
   para aquele site.
 
@@ -308,6 +315,15 @@ arquivos JSON em `%APPDATA%\Baixador`. As capas ficam na pasta `thumbs`, e os lo
 
 Testes feitos no Windows 11 Pro x64, com yt-dlp 2026.10.26, FFmpeg de novembro de 2026 e uma RTX 5060 Ti.
 
+**Atualização em um clique (1.4.0):**
+- Testes do atualizador: 42 de 42 (40 com servidor simulado e 2 com a troca real de pasta).
+- App empacotado, de um build local "1.3.9" (com o código novo) para a 1.4.0, com um servidor local que recusa a
+  API com 403: a versão portátil atualizou com um clique em **Atualizar app** e reabriu, mantendo histórico e
+  pasta preferida; uma cópia de teste instalada atualizou por **Só verificar** e **Atualizar agora**, com o
+  instalador em modo silencioso, e reabriu.
+- No GitHub real, o caminho pela página pública encontrou a 1.3.0 e os arquivos dos dois formatos (sem baixar).
+  O limite real da API não foi provocado.
+
 **Novidades da 1.3.0:**
 - Lote em MP3 (versão de desenvolvimento), com vídeos do YouTube, uma playlist, um link repetido, um inválido e o
   cancelamento da análise. Pasta preferida mantida depois de reabrir; troca de uma só vez sem alterá-la (a janela
@@ -323,7 +339,8 @@ Testes feitos no Windows 11 Pro x64, com yt-dlp 2026.10.26, FFmpeg de novembro d
   empacotamento e conferência de nome e versão). A etapa de assinatura foi pulada. Os arquivos da release foram
   gerados no PC do mantenedor, não pelo workflow.
 
-Os resultados abaixo, do conversor e do atualizador, são dos testes da 1.2.0; esse código não mudou.
+Os resultados abaixo são dos testes da 1.2.0. O código do conversor não mudou desde então; o do atualizador
+mudou na 1.4.0 (veja acima).
 
 **Conversor** (55 de 55 testes com o FFmpeg real, saídas conferidas com o ffprobe): os presets, CPU e NVENC
 (H.264, H.265 e AV1), limites de tamanho, vídeo curto, longo, 4K, sem áudio, vertical, HDR, nomes com

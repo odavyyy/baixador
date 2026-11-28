@@ -1,6 +1,6 @@
 # Termos de uso do Baixador
 
-Última atualização: 28 de novembro de 2026 (versão 1.3.0)
+Última atualização: 28 de novembro de 2026 (versão 1.4.0)
 
 ## O que é
 

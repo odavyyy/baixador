@@ -186,6 +186,8 @@ export interface Api {
   downloadUpdate(): Promise<UpdateState>;
   cancelUpdate(): Promise<void>;
   installUpdate(): Promise<{ ok: boolean; error?: string }>;
+  /** check, download, verify, install and reopen */
+  updateNow(): Promise<{ ok: boolean; error?: string }>;
   openReleasePage(): Promise<void>;
   onUpdate(cb: (s: UpdateState) => void): () => void;
   readDoc(doc: LegalDoc): Promise<string>;

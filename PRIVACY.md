@@ -1,6 +1,6 @@
 # Política de Privacidade do Baixador
 
-Última atualização: 28 de novembro de 2026 (versão 1.3.0)
+Última atualização: 28 de novembro de 2026 (versão 1.4.0)
 
 O Baixador é um programa que roda no seu computador. Ele **não tem servidor próprio, conta, cadastro,
 anúncios, telemetria nem relatórios de erro automáticos**. O mantenedor do projeto não recebe, não vê e não
@@ -37,7 +37,7 @@ Configurações.
 |---|---|
 | Analisar um link ou uma lista de links, ou baixar | O site do link, por meio do **yt-dlp** instalado no seu computador |
 | Analisar um link, uma lista de links ou uma playlist, ou baixar | O servidor de imagens do site, para carregar e salvar as capas. Depois de fechar o app, a lista de downloads e o histórico usam só as cópias salvas |
-| **Verificar atualizações** ou baixar uma atualização (botões em Configurações) | **GitHub** (`api.github.com`, `github.com` e `*.githubusercontent.com`) |
+| **Atualizar app**, **Atualizar agora** ou **Só verificar** (botões em Configurações) | **GitHub** (`api.github.com`, `github.com` e `*.githubusercontent.com`) |
 | **Atualizar yt-dlp** (Diagnóstico) | Os servidores usados pelo comando `yt-dlp -U` |
 | Abrir um link do projeto | Seu navegador |
 

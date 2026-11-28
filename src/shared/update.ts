@@ -3,11 +3,14 @@
 export const REPO = 'odavyyy/baixador';
 export const RELEASES_PAGE = `https://github.com/${REPO}/releases`;
 export const LATEST_API = `https://api.github.com/repos/${REPO}/releases/latest`;
+/** Public page that redirects to the latest stable release; it doesn't count against the API request limit. */
+export const LATEST_PAGE = `${RELEASES_PAGE}/latest`;
 
 export type InstallKind = 'installed' | 'portable' | 'dev';
 
 export interface ReleaseAsset {
   name: string;
+  /** 0 when the server didn't say */
   size: number;
   url: string;
   /** "sha256:…" as reported by the GitHub API */
@@ -85,6 +88,14 @@ export function readRelease(json: any, kind: InstallKind, downloadBase = `https:
     asset: find(assetName(kind, version)),
     sums: find('SHA256SUMS.txt'),
   };
+}
+
+/** The tag in the address LATEST_PAGE redirects to. Anything but `<releases>/tag/vX.Y.Z` is refused. */
+export function tagFromLatestRedirect(location: string, releasesPage = RELEASES_PAGE): string | undefined {
+  const prefix = `${releasesPage}/tag/`;
+  if (!location.startsWith(prefix)) return undefined;
+  const tag = location.slice(prefix.length);
+  return /^v\d/.test(tag) && parseVersion(tag) ? tag : undefined;
 }
 
 /** The expected hash of `name` in a "sha256sum" style file. */
