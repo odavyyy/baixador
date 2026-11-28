@@ -314,10 +314,14 @@ Testes feitos no Windows 11 Pro x64, com yt-dlp 2026.10.26, FFmpeg de novembro d
   de escolher pasta foi simulada).
 - No zip portátil empacotado: lote em vídeo, incluindo dois vídeos diferentes com o mesmo título (páginas locais
   de teste), cada um salvo em seu próprio arquivo.
-- Atualização portátil: a 1.2.0 publicada passou para a 1.3.0 e reabriu, mantendo configurações e histórico. A
-  origem foi um servidor local.
+- Atualização portátil: a 1.2.0 publicada passou para a 1.3.0 e reabriu. Antes de publicar, com um servidor local,
+  manteve configurações e histórico. Depois de publicar, baixou a release do GitHub, conferiu o SHA-256 e manteve
+  a pasta preferida.
 - Instalador: uma cópia de teste com outro nome e ID foi instalada em modo silencioso, reinstalada por cima,
   aberta e desinstalada. O assistente com janelas não foi testado.
+- GitHub Actions: o workflow `build` rodou com sucesso na tag `v1.3.0` (tipos, testes do atualizador,
+  empacotamento e conferência de nome e versão). A etapa de assinatura foi pulada. Os arquivos da release foram
+  gerados no PC do mantenedor, não pelo workflow.
 
 Os resultados abaixo, do conversor e do atualizador, são dos testes da 1.2.0; esse código não mudou.
 
@@ -342,7 +346,7 @@ faixas; fila, pausar, continuar, cancelar e tentar de novo.
 
 **Ainda não testado:** outros sites, Windows 10, computador sem GPU NVIDIA (a falta da GPU foi forçada),
 atualização de uma instalação em pasta que exige administrador, cookies do navegador, detecção de links
-copiados, notificações do Windows, o botão **Atualizar yt-dlp** e o workflow do GitHub Actions.
+copiados, notificações do Windows, o botão **Atualizar yt-dlp** e a etapa de assinatura do workflow.
 
 ## Como foi feito
 

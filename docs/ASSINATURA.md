@@ -10,8 +10,8 @@ de assinatura como a SignPath Foundation. A regra completa está em
 - Conferência do nome do produto e da versão gravados nos executáveis.
 - Etapa de assinatura **desligada** até existirem as variáveis e o segredo.
 
-> O workflow ainda não foi executado no GitHub. A etapa de assinatura só poderá ser testada com uma conta
-> aprovada.
+> A etapa de build rodou com sucesso no GitHub na tag `v1.3.0` (28/11/2026). A etapa de assinatura foi pulada
+> e ainda não foi testada: isso exige uma conta no serviço de assinatura, já configurada.
 
 ## Falta fazer depois de uma aprovação
 
